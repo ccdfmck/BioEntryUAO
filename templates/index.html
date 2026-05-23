@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>UAO | BioEntry</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="styles.css"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
 <div class="app">
@@ -117,7 +117,8 @@
     </div>
 
     <div class="video-wrapper">
-
+    
+         <img id="video-feed" src="{{ url_for('video') }}">
       <!-- Fondo / placeholder mientras no hay stream real -->
       <div class="cam-bg">
         <div class="cam-no-face" id="no-face-msg">
@@ -131,6 +132,7 @@
           <p>Buscando rostros...</p>
         </div>
       </div>
+
 
       <!-- Bounding box overlay -->
       <div class="bb-overlay hidden" id="bb-overlay">
@@ -166,6 +168,6 @@
   </main>
 
 </div>
-<script src="app.js"></script>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
 </html>

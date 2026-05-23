@@ -1,4 +1,4 @@
-/* ══ RESET & VARIABLES ═══════════════════════════════════════════════════════ */
+/*RESET & VARIABLES */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
@@ -25,7 +25,7 @@ html, body {
   overflow: hidden;
 }
 
-/* ══ LAYOUT ══════════════════════════════════════════════════════════════════ */
+/*LAYOUT */
 .app {
   display: grid;
   grid-template-rows: 52px 1fr;
@@ -34,7 +34,7 @@ html, body {
   width: 100vw;
 }
 
-/* ══ HEADER ══════════════════════════════════════════════════════════════════ */
+/*HEADER*/
 header {
   grid-column: 1 / -1;
   background: var(--cr);
@@ -114,7 +114,7 @@ header {
 
 .btn-close:hover { background: rgba(255, 255, 255, 0.26); }
 
-/* ══ SIDEBAR ═════════════════════════════════════════════════════════════════ */
+/*SIDEBAR*/
 aside {
   background: var(--cream);
   border-right: 1px solid var(--border);
@@ -362,7 +362,7 @@ aside {
 .ri-badge.ok   { background: var(--ok-bg);  color: var(--ok);   }
 .ri-badge.deny { background: var(--deny-bg); color: var(--deny); }
 
-/* ══ PANEL CÁMARA ════════════════════════════════════════════════════════════ */
+/*PANEL CÁMARA*/
 .camera-panel {
   background: #0e0e0e;
   display: flex;

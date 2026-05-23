@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>UAO | BioEntry</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+<div class="app">
+
+  <!-- ══ HEADER ══════════════════════════════════════════════════════════════ -->
+  <header>
+    <div style="display:flex; align-items:baseline;">
+      <span class="logo-text">uao</span>
+      <span class="logo-sep">|</span>
+      <span class="logo-title">BioEntry</span>
+    </div>
+    <div class="header-right">
+      <div class="pill">
+        <span class="dot-live"></span>
+        Cámara en vivo
+      </div>
+      <button class="btn-close">✕</button>
+    </div>
+  </header>
+
+  <!-- ══ SIDEBAR ═════════════════════════════════════════════════════════════ -->
+  <aside>
+
+    <!-- Perfil Personal -->
+    <div>
+      <div class="sec-label">Perfil Personal</div>
+      <div class="profile-block">
+        <div class="avatar" id="avatar">--</div>
+        <div>
+          <div class="profile-name" id="p-name">Esperando identificación...</div>
+          <div class="profile-meta">
+            <span id="p-role"    style="color:#bbb;">—</span>
+            <span id="p-code"    style="color:#bbb;">—</span>
+            <span id="p-program" style="color:#bbb;">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Datos Ingreso -->
+    <div>
+      <div class="sec-label">Datos Ingreso</div>
+      <div class="access-card">
+        <div class="access-row">Entrada: <strong id="a-gate">Entrada Principal</strong></div>
+        <div class="access-row">Hora: <strong id="a-time">--:--:-- --</strong></div>
+        <span class="status-tag waiting" id="a-status">En espera</span>
+      </div>
+    </div>
+
+    <!-- Accuracy -->
+    <div>
+      <div class="sec-label">Accuracy del Reconocimiento</div>
+      <div class="accuracy-bar-wrap">
+        <div class="acc-top">
+          <span class="acc-label">Confianza</span>
+          <span class="acc-value waiting" id="acc-val">--%</span>
+        </div>
+        <div class="acc-track">
+          <div class="acc-fill" id="acc-fill" style="width:0%; background:#ddd;"></div>
+        </div>
+        <div class="threshold-note">Umbral de aprobación: ≥ 75%</div>
+      </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div>
+      <div class="sec-label">Estadísticas</div>
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-label">Cámaras activas</div>
+          <div class="stat-value">1/1</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Registrados</div>
+          <div class="stat-value" id="stat-registered">8</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Aprobados hoy</div>
+          <div class="stat-value" id="stat-ok">0</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Denegados hoy</div>
+          <div class="stat-value" id="stat-deny" style="color:var(--deny);">0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recientes -->
+    <div>
+      <div class="sec-label">Recientemente Identificados</div>
+      <div class="recent-list" id="recent-list">
+        <div style="font-size:11.5px; color:#bbb; padding:6px 0; font-style:italic;">
+          Sin registros aún...
+        </div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ══ PANEL CÁMARA ════════════════════════════════════════════════════════ -->
+  <main class="camera-panel">
+
+    <div class="cam-topbar">
+      <div class="cam-label">
+        <span class="dot-live"></span>
+        Live Feed – Entrada Principal
+      </div>
+      <div class="cam-datetime" id="cam-clock"></div>
+    </div>
+
+    <div class="video-wrapper">
+
+      <!-- Fondo / placeholder mientras no hay stream real -->
+      <div class="cam-bg">
+        <div class="cam-no-face" id="no-face-msg">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke-width="1.2">
+            <rect x="2" y="3" width="20" height="14" rx="2"/>
+            <path d="M8 21h8M12 17v4"/>
+            <circle cx="9"  cy="10" r="1.5"/>
+            <circle cx="15" cy="10" r="1.5"/>
+            <path d="M9 14s1 1.5 3 1.5 3-1.5 3-1.5"/>
+          </svg>
+          <p>Buscando rostros...</p>
+        </div>
+      </div>
+
+      <!-- Bounding box overlay -->
+      <div class="bb-overlay hidden" id="bb-overlay">
+        <div class="bounding-box" id="bbox">
+          <div class="bb-corner tl"></div>
+          <div class="bb-corner tr"></div>
+          <div class="bb-corner bl"></div>
+          <div class="bb-corner br"></div>
+          <div class="bb-label" id="bb-label">—</div>
+          <div class="bb-conf"  id="bb-conf">—</div>
+        </div>
+      </div>
+
+      <!-- Flash de resultado (APROBADO / DENEGADO) -->
+      <div class="status-flash" id="flash">
+        <div class="flash-label" id="flash-label"></div>
+      </div>
+
+      <!-- Indicador "Analizando..." -->
+      <div class="searching-indicator" id="searching">
+        <div class="spin"></div>
+        <span>Analizando...</span>
+      </div>
+
+    </div>
+
+    <!-- Barra inferior -->
+    <div class="cam-toolbar">
+      <div class="spacer"></div>
+      <div class="res-tag" id="fps-tag">simulado · 30fps</div>
+    </div>
+
+  </main>
+
+</div>
+<script src="app.js"></script>
+</body>
+</html>

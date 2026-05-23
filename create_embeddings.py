@@ -44,6 +44,9 @@ names = []
 
 for file in os.listdir(DATABASE_FOLDER):
 
+    if not file.lower().endswith((".jpg", ".jpeg", ".png")):
+     continue
+
     path = os.path.join(DATABASE_FOLDER, file)
 
     print("Procesando:", path)

@@ -15,14 +15,16 @@ const THRESHOLD = 75;
 // ===============================
 
 function updateClock() {
+
   const now = new Date();
 
-  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-  const months = ['January','February','March','April','May','June',
-                  'July','August','September','October','November','December'];
+  const months = ['January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'];
 
   let h = now.getHours();
+
   const ampm = h >= 12 ? 'PM' : 'AM';
 
   h = h % 12 || 12;
@@ -35,6 +37,7 @@ function updateClock() {
 }
 
 updateClock();
+
 setInterval(updateClock, 1000);
 
 // ===============================
@@ -42,14 +45,16 @@ setInterval(updateClock, 1000);
 // ===============================
 
 function nowTime() {
+
   const now = new Date();
 
   let h = now.getHours();
+
   const ampm = h >= 12 ? 'PM' : 'AM';
 
   h = h % 12 || 12;
 
-  return `${h}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')} ${ampm}`;
+  return `${h}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')} ${ampm}`;
 }
 
 // ===============================
@@ -59,6 +64,7 @@ function nowTime() {
 function setAccuracy(pct, approved) {
 
   const val = document.getElementById('acc-val');
+
   const fill = document.getElementById('acc-fill');
 
   val.textContent = pct + '%';
@@ -82,7 +88,9 @@ function resetPanel() {
     'Esperando identificación...';
 
   document.getElementById('p-role').textContent = '—';
+
   document.getElementById('p-code').textContent = '—';
+
   document.getElementById('p-program').textContent = '—';
 
   document.getElementById('avatar').textContent = '--';
@@ -92,12 +100,15 @@ function resetPanel() {
   const st = document.getElementById('a-status');
 
   st.textContent = 'En espera';
+
   st.className = 'status-tag waiting';
 
   document.getElementById('acc-val').textContent = '--%';
+
   document.getElementById('acc-val').className = 'acc-value waiting';
 
   document.getElementById('acc-fill').style.width = '0%';
+
   document.getElementById('acc-fill').style.background = '#ddd';
 
   document.getElementById('bb-overlay').classList.add('hidden');
@@ -112,6 +123,7 @@ function resetPanel() {
 function showFlash(approved) {
 
   const flash = document.getElementById('flash');
+
   const label = document.getElementById('flash-label');
 
   flash.className =
@@ -185,7 +197,6 @@ async function pollRecognition() {
 
     const data = await response.json();
 
-    // NO DETECTA NADIE
     if (!data.detected) {
       resetPanel();
       return;
@@ -194,18 +205,19 @@ async function pollRecognition() {
     document.getElementById('no-face-msg')
       .classList.add('hidden');
 
-    // DATOS
     const person = {
+
       name: data.name,
+
       initials: data.name
         .split(' ')
         .map(n => n[0])
         .join('')
-        .substring(0,2),
+        .substring(0, 2),
 
-      role: 'Estudiante',
-      code: data.code || '2230000',
-      program: 'Ingeniería'
+      role: data.rol,
+      code: data.codigo,
+      program: data.programa
     };
 
     const pct = parseInt(data.confidence);
@@ -213,6 +225,7 @@ async function pollRecognition() {
     const approved = pct >= THRESHOLD;
 
     // PERFIL
+
     document.getElementById('avatar').textContent =
       person.initials;
 
@@ -232,6 +245,7 @@ async function pollRecognition() {
       nowTime();
 
     // STATUS
+
     const st = document.getElementById('a-status');
 
     st.textContent =
@@ -241,9 +255,11 @@ async function pollRecognition() {
       'status-tag ' + (approved ? 'ok' : 'deny');
 
     // ACCURACY
+
     setAccuracy(pct, approved);
 
-    // BOUNDING BOX
+    // BOUNDING BOX REAL
+
     const overlay = document.getElementById('bb-overlay');
 
     const bbox = document.getElementById('bbox');
@@ -254,10 +270,13 @@ async function pollRecognition() {
 
     overlay.classList.remove('hidden');
 
-    bbox.style.top = '18%';
-    bbox.style.left = '35%';
-    bbox.style.width = '28%';
-    bbox.style.height = '55%';
+    bbox.style.top = data.y + 'px';
+
+    bbox.style.left = data.x + 'px';
+
+    bbox.style.width = data.w + 'px';
+
+    bbox.style.height = data.h + 'px';
 
     bbox.className =
       'bounding-box animating' +
@@ -277,10 +296,13 @@ async function pollRecognition() {
       (approved ? '' : ' deny-conf');
 
     // FLASH
+
     showFlash(approved);
 
     // CONTADORES
+
     if (approved) {
+
       state.okCount++;
 
       document.getElementById('stat-ok').textContent =
@@ -295,6 +317,7 @@ async function pollRecognition() {
     }
 
     // RECIENTES
+
     addRecent(person, approved, pct);
 
   } catch (err) {

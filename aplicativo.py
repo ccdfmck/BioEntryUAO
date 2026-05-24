@@ -1,18 +1,18 @@
 from flask import Flask, render_template, Response, jsonify
 import cv2
 import os
-import tempfile
 import numpy as np
 import faiss
-
 from deepface import DeepFace
-
 import sqlite3
 
 app = Flask(__name__)
 
-conn = sqlite3.connect("usuarios.db", check_same_thread=False)
+# ============================================
+# SQLITE
+# ============================================
 
+conn = sqlite3.connect("usuarios.db", check_same_thread=False)
 cursor = conn.cursor()
 
 # ============================================
@@ -21,10 +21,11 @@ cursor = conn.cursor()
 
 DB_PATH = "database"
 
-THRESHOLD = 120
+# menor = más estricto
+THRESHOLD = 0.6
 
 # ============================================
-# FAISS
+# CARGAR EMBEDDINGS
 # ============================================
 
 embeddings = []
@@ -34,6 +35,9 @@ print("Cargando base de rostros...")
 
 for file in os.listdir(DB_PATH):
 
+    if not file.lower().endswith((".jpg", ".jpeg", ".png")):
+        continue
+
     path = os.path.join(DB_PATH, file)
 
     try:
@@ -41,7 +45,7 @@ for file in os.listdir(DB_PATH):
         objs = DeepFace.represent(
             img_path=path,
             model_name="ArcFace",
-            detector_backend="retinaface",
+            detector_backend="opencv",
             enforce_detection=False
         )
 
@@ -62,9 +66,16 @@ for file in os.listdir(DB_PATH):
 
 embeddings = np.array(embeddings).astype("float32")
 
+# NORMALIZAR
+faiss.normalize_L2(embeddings)
+
 dimension = embeddings.shape[1]
 
-index = faiss.IndexFlatL2(dimension)
+# ============================================
+# FAISS
+# ============================================
+
+index = faiss.IndexFlatIP(dimension)
 
 index.add(embeddings)
 
@@ -77,6 +88,10 @@ print("Personas registradas:", len(labels))
 
 camera = cv2.VideoCapture(0)
 
+# BAJAR RESOLUCIÓN PARA MENOS LAG
+camera.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+
 face_data = {
     "detected": False
 }
@@ -85,10 +100,11 @@ face_data = {
 # VIDEO STREAM
 # ============================================
 
-
 def generate_frames():
 
     global face_data
+
+    frame_count = 0
 
     while True:
 
@@ -97,97 +113,87 @@ def generate_frames():
         if not success:
             break
 
+        frame_count += 1
+
+        # espejo
+        frame = cv2.flip(frame, 1)
+
         # ============================================
-        # GUARDAR FRAME TEMPORAL
+        # SOLO ANALIZAR CADA 15 FRAMES
         # ============================================
 
-        temp_path = tempfile.mktemp(suffix=".jpg")
+        if frame_count % 15 == 0:
 
-        cv2.imwrite(temp_path, frame)
+            try:
 
-        try:
+                objs = DeepFace.represent(
+                    img_path=frame,
+                    model_name="ArcFace",
+                    detector_backend="opencv",
+                    enforce_detection=False
+                )
 
-            objs = DeepFace.represent(
-                img_path=temp_path,
-                model_name="ArcFace",
-                detector_backend="retinaface",
-                enforce_detection=False
-            )
+                if len(objs) > 0:
 
-            # ============================================
-            # SI NO DETECTA
-            # ============================================
+                    obj = objs[0]
 
-            if len(objs) == 0:
+                    embedding = obj["embedding"]
 
-                face_data = {
-                    "detected": False
-                }
+                    facial_area = obj["facial_area"]
 
-            else:
+                    x = facial_area["x"]
+                    y = facial_area["y"]
+                    w = facial_area["w"]
+                    h = facial_area["h"]
 
-                obj = objs[0]
+                    embedding = np.array([embedding]).astype("float32")
 
-                embedding = obj["embedding"]
-
-                facial_area = obj["facial_area"]
-
-                x = facial_area["x"]
-                y = facial_area["y"]
-                w = facial_area["w"]
-                h = facial_area["h"]
-
-                embedding = np.array([embedding], dtype="float32")
-
-                # ============================================
-                # BUSCAR EN FAISS
-                # ============================================
-
-                D, I = index.search(embedding, 1)
-
-                distance = float(D[0][0])
-
-                print("DISTANCIA:", distance)
-                print("PERSONA:", labels[I[0][0]])
-
-                confidence = max(0, 100 - (distance * 10))
-                confidence = round(confidence, 2)
-
-                # ============================================
-                # SI RECONOCE
-                # ============================================
-
-                if distance < THRESHOLD:
-
-                    name = labels[I[0][0]]
+                    # NORMALIZAR
+                    faiss.normalize_L2(embedding)
 
                     # ============================================
-                    # SQLITE
+                    # BUSCAR EN FAISS
                     # ============================================
-                    archivo = name + ".jpg"
 
-                    cursor.execute(
-                          "SELECT nombre, codigo, rol, programa FROM usuarios WHERE archivo LIKE ?",
-                          (f"{name}%",)
-                          )
+                    D, I = index.search(embedding, 1)
 
-                    user = cursor.fetchone()
+                    similarity = float(D[0][0])
 
-                    if user:
+                    print("SIMILITUD:", similarity)
+                    print("PERSONA:", labels[I[0][0]])
+
+                    confidence = round(similarity * 100, 2)
+
+                    # ============================================
+                    # SI RECONOCE
+                    # ============================================
+
+                    if similarity > THRESHOLD:
+
+                        name = labels[I[0][0]]
+
+                        cursor.execute(
+                            "SELECT nombre, codigo, rol, programa FROM usuarios WHERE archivo LIKE ?",
+                            (f"{name}%",)
+                        )
+
+                        user = cursor.fetchone()
+
+                        if user:
 
                             nombre_real = user[0]
                             codigo = user[1]
                             rol = user[2]
                             programa = user[3]
 
-                    else:
+                        else:
 
                             nombre_real = name
                             codigo = "N/A"
                             rol = "N/A"
                             programa = "N/A"
 
-                    face_data = {
+                        face_data = {
                             "detected": True,
                             "name": nombre_real,
                             "codigo": codigo,
@@ -200,29 +206,11 @@ def generate_frames():
                             "h": int(h)
                         }
 
-                        # DIBUJAR EN FRAME
+                    else:
 
-                    cv2.rectangle(
-                            frame,
-                            (x, y),
-                            (x + w, y + h),
-                            (0, 255, 0),
-                            2
-                        )
-
-                    cv2.putText(
-                            frame,
-                            f"{nombre_real} {confidence:.1f}%",
-                            (x, y - 10),
-                            cv2.FONT_HERSHEY_SIMPLEX,
-                            0.7,
-                            (0, 255, 0),
-                            2
-                        )
-
-                # ============================================
-                # DESCONOCIDO
-                # ============================================
+                        face_data = {
+                            "detected": False
+                        }
 
                 else:
 
@@ -230,33 +218,37 @@ def generate_frames():
                         "detected": False
                     }
 
-                    cv2.rectangle(
-                        frame,
-                        (x, y),
-                        (x + w, y + h),
-                        (0, 0, 255),
-                        2
-                    )
-
-                    cv2.putText(
-                        frame,
-                        "DESCONOCIDO",
-                        (x, y - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        0.7,
-                        (0, 0, 255),
-                        2
-                    )
-
-        except Exception as e:
-            print("Error:", e)
+            except Exception as e:
+                print("Error:", e)
 
         # ============================================
-        # BORRAR TEMP
+        # DIBUJAR RESULTADO
         # ============================================
 
-        if os.path.exists(temp_path):
-            os.remove(temp_path)
+        if face_data["detected"]:
+
+            x = face_data["x"]
+            y = face_data["y"]
+            w = face_data["w"]
+            h = face_data["h"]
+
+            cv2.rectangle(
+                frame,
+                (x, y),
+                (x + w, y + h),
+                (0, 255, 0),
+                2
+            )
+
+            cv2.putText(
+                frame,
+                f'{face_data["name"]} {face_data["confidence"]:.1f}%',
+                (x, y - 10),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.7,
+                (0, 255, 0),
+                2
+            )
 
         # ============================================
         # ENVIAR FRAME
@@ -277,11 +269,9 @@ def generate_frames():
 # ROUTES
 # ============================================
 
-
 @app.route("/")
 def home():
     return render_template("index.html")
-
 
 @app.route("/video")
 def video():
@@ -290,7 +280,6 @@ def video():
         mimetype="multipart/x-mixed-replace; boundary=frame"
     )
 
-
 @app.route("/face_data")
 def get_face_data():
     return jsonify(face_data)
@@ -298,7 +287,6 @@ def get_face_data():
 # ============================================
 # RUN
 # ============================================
-
 
 if __name__ == "__main__":
     app.run(debug=True)

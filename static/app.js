@@ -1,5 +1,5 @@
 // ===============================
-// BIOENTRY REALTIME FRONTEND
+// ESTADO
 // ===============================
 
 const state = {
@@ -7,8 +7,6 @@ const state = {
   denyCount: 0,
   recentList: []
 };
-
-const THRESHOLD = 75;
 
 // ===============================
 // RELOJ
@@ -18,65 +16,15 @@ function updateClock() {
 
   const now = new Date();
 
-  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
-  const months = ['January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'];
-
-  let h = now.getHours();
-
-  const ampm = h >= 12 ? 'PM' : 'AM';
-
-  h = h % 12 || 12;
-
-  const mm = String(now.getMinutes()).padStart(2, '0');
-  const ss = String(now.getSeconds()).padStart(2, '0');
-
-  document.getElementById('cam-clock').innerHTML =
-    `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}<br>${h}:${mm}:${ss} ${ampm}`;
+  document.getElementById("cam-clock").innerHTML =
+    now.toLocaleDateString() +
+    "<br>" +
+    now.toLocaleTimeString();
 }
-
-updateClock();
 
 setInterval(updateClock, 1000);
 
-// ===============================
-// HORA
-// ===============================
-
-function nowTime() {
-
-  const now = new Date();
-
-  let h = now.getHours();
-
-  const ampm = h >= 12 ? 'PM' : 'AM';
-
-  h = h % 12 || 12;
-
-  return `${h}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')} ${ampm}`;
-}
-
-// ===============================
-// ACCURACY BAR
-// ===============================
-
-function setAccuracy(pct, approved) {
-
-  const val = document.getElementById('acc-val');
-
-  const fill = document.getElementById('acc-fill');
-
-  val.textContent = pct + '%';
-
-  val.className = 'acc-value ' + (approved ? 'ok' : 'deny');
-
-  fill.style.width = pct + '%';
-
-  fill.style.background = approved
-    ? 'linear-gradient(90deg, #1a7a4a, #27ae60)'
-    : 'linear-gradient(90deg, #922b21, #c0392b)';
-}
+updateClock();
 
 // ===============================
 // RESET PANEL
@@ -84,245 +32,184 @@ function setAccuracy(pct, approved) {
 
 function resetPanel() {
 
-  document.getElementById('p-name').textContent =
-    'Esperando identificación...';
+  document.getElementById("p-name").textContent =
+    "Esperando identificación...";
 
-  document.getElementById('p-role').textContent = '—';
+  document.getElementById("p-role").textContent = "—";
 
-  document.getElementById('p-code').textContent = '—';
+  document.getElementById("p-code").textContent = "—";
 
-  document.getElementById('p-program').textContent = '—';
+  document.getElementById("p-program").textContent = "—";
 
-  document.getElementById('avatar').textContent = '--';
+  document.getElementById("avatar").textContent = "--";
 
-  document.getElementById('a-time').textContent = '--:--:-- --';
+  document.getElementById("a-status").textContent =
+    "En espera";
 
-  const st = document.getElementById('a-status');
+  document.getElementById("a-status").className =
+    "status-tag waiting";
 
-  st.textContent = 'En espera';
+  document.getElementById("acc-val").textContent =
+    "--%";
 
-  st.className = 'status-tag waiting';
+  document.getElementById("acc-fill").style.width =
+    "0%";
 
-  document.getElementById('acc-val').textContent = '--%';
+  document.getElementById("bb-overlay")
+    .classList.add("hidden");
 
-  document.getElementById('acc-val').className = 'acc-value waiting';
-
-  document.getElementById('acc-fill').style.width = '0%';
-
-  document.getElementById('acc-fill').style.background = '#ddd';
-
-  document.getElementById('bb-overlay').classList.add('hidden');
-
-  document.getElementById('no-face-msg').classList.remove('hidden');
+  document.getElementById("no-face-msg")
+    .classList.remove("hidden");
 }
 
 // ===============================
-// FLASH
+// MOSTRAR ROSTRO
 // ===============================
 
-function showFlash(approved) {
+function showFace(data) {
 
-  const flash = document.getElementById('flash');
+  document.getElementById("no-face-msg")
+    .classList.add("hidden");
 
-  const label = document.getElementById('flash-label');
+  // ===============================
+  // DATOS PERSONA
+  // ===============================
 
-  flash.className =
-    'status-flash ' + (approved ? 'ok-flash' : 'deny-flash');
+  document.getElementById("p-name").textContent =
+    data.name;
 
-  label.textContent =
-    approved ? '✓ APROBADO' : '✕ DENEGADO';
+  document.getElementById("p-role").textContent =
+    "Rol: " + data.rol;
 
-  flash.classList.add('show');
+  document.getElementById("p-code").textContent =
+    "Código: " + data.codigo;
 
-  setTimeout(() => {
-    flash.classList.remove('show');
-  }, 1400);
-}
+  document.getElementById("p-program").textContent =
+    data.programa;
 
-// ===============================
-// RECIENTES
-// ===============================
+  // ===============================
+  // AVATAR
+  // ===============================
 
-function addRecent(person, approved, pct) {
+  const initials = data.name
+    .split(" ")
+    .map(n => n[0])
+    .join("")
+    .substring(0, 2);
 
-  state.recentList.unshift({
-    person,
-    approved,
-    pct
-  });
+  document.getElementById("avatar").textContent =
+    initials;
 
-  if (state.recentList.length > 6) {
-    state.recentList.pop();
+  // ===============================
+  // STATUS
+  // ===============================
+
+  const approved = data.detected;
+
+  const status = document.getElementById("a-status");
+
+  status.textContent =
+    approved ? "Aprobado" : "Denegado";
+
+  status.className =
+    approved
+      ? "status-tag ok"
+      : "status-tag deny";
+
+  // ===============================
+  // CONFIDENCE
+  // ===============================
+
+  const confidence = parseInt(data.confidence);
+
+  document.getElementById("acc-val").textContent =
+    confidence + "%";
+
+  document.getElementById("acc-fill").style.width =
+    confidence + "%";
+
+  // ===============================
+  // BOUNDING BOX
+  // ===============================
+
+  const overlay =
+    document.getElementById("bb-overlay");
+
+  const bbox =
+    document.getElementById("bbox");
+
+  overlay.classList.remove("hidden");
+
+  bbox.style.left = data.x + "px";
+  bbox.style.top = data.y + "px";
+  bbox.style.width = data.w + "px";
+  bbox.style.height = data.h + "px";
+
+  // ===============================
+  // LABEL
+  // ===============================
+
+  document.getElementById("bb-label").textContent =
+    data.name;
+
+  document.getElementById("bb-conf").textContent =
+    confidence + "%";
+
+  // ===============================
+  // HORA
+  // ===============================
+
+  document.getElementById("a-time").textContent =
+    new Date().toLocaleTimeString();
+
+  // ===============================
+  // CONTADORES
+  // ===============================
+
+  if (approved) {
+
+    state.okCount++;
+
+    document.getElementById("stat-ok").textContent =
+      state.okCount;
+
+  } else {
+
+    state.denyCount++;
+
+    document.getElementById("stat-deny").textContent =
+      state.denyCount;
   }
-
-  document.getElementById('recent-list').innerHTML =
-    state.recentList.map(r => `
-      <div class="recent-item">
-
-        <div class="ri-left">
-
-          <div class="ri-avatar">
-            ${r.person.initials}
-          </div>
-
-          <div>
-            <div class="ri-name">
-              ${r.person.name}
-            </div>
-
-            <div class="ri-role">
-              ${r.pct}% confianza
-            </div>
-          </div>
-
-        </div>
-
-        <span class="ri-badge ${r.approved ? 'ok' : 'deny'}">
-          ${r.approved ? 'Aprobado' : 'Denegado'}
-        </span>
-
-      </div>
-    `).join('');
 }
 
 // ===============================
-// CONSULTAR FLASK
+// CONSULTAR BACKEND
 // ===============================
 
 async function pollRecognition() {
 
   try {
 
-    const response = await fetch('/face_data');
+    const response =
+      await fetch("/face_data");
 
-    const data = await response.json();
+    const data =
+      await response.json();
+
+    console.log(data);
 
     if (!data.detected) {
+
       resetPanel();
+
       return;
     }
 
-    document.getElementById('no-face-msg')
-      .classList.add('hidden');
+    showFace(data);
 
-    const person = {
+  } catch (error) {
 
-      name: data.name,
-
-      initials: data.name
-        .split(' ')
-        .map(n => n[0])
-        .join('')
-        .substring(0, 2),
-
-      role: data.rol,
-      code: data.codigo,
-      program: data.programa
-    };
-
-    const pct = parseInt(data.confidence);
-
-    const approved = pct >= THRESHOLD;
-
-    // PERFIL
-
-    document.getElementById('avatar').textContent =
-      person.initials;
-
-    document.getElementById('p-name').textContent =
-      person.name;
-
-    document.getElementById('p-role').textContent =
-      'Rol: ' + person.role;
-
-    document.getElementById('p-code').textContent =
-      'Código: ' + person.code;
-
-    document.getElementById('p-program').textContent =
-      person.program;
-
-    document.getElementById('a-time').textContent =
-      nowTime();
-
-    // STATUS
-
-    const st = document.getElementById('a-status');
-
-    st.textContent =
-      approved ? 'Aprobado' : 'Denegado';
-
-    st.className =
-      'status-tag ' + (approved ? 'ok' : 'deny');
-
-    // ACCURACY
-
-    setAccuracy(pct, approved);
-
-    // BOUNDING BOX REAL
-
-    const overlay = document.getElementById('bb-overlay');
-
-    const bbox = document.getElementById('bbox');
-
-    const bbLabel = document.getElementById('bb-label');
-
-    const bbConf = document.getElementById('bb-conf');
-
-    overlay.classList.remove('hidden');
-
-    bbox.style.top = data.y + 'px';
-
-    bbox.style.left = data.x + 'px';
-
-    bbox.style.width = data.w + 'px';
-
-    bbox.style.height = data.h + 'px';
-
-    bbox.className =
-      'bounding-box animating' +
-      (approved ? '' : ' deny-box');
-
-    bbLabel.textContent = person.name;
-
-    bbLabel.className =
-      'bb-label' +
-      (approved ? '' : ' deny-label');
-
-    bbConf.textContent =
-      'confianza: ' + pct + '%';
-
-    bbConf.className =
-      'bb-conf' +
-      (approved ? '' : ' deny-conf');
-
-    // FLASH
-
-    showFlash(approved);
-
-    // CONTADORES
-
-    if (approved) {
-
-      state.okCount++;
-
-      document.getElementById('stat-ok').textContent =
-        state.okCount;
-
-    } else {
-
-      state.denyCount++;
-
-      document.getElementById('stat-deny').textContent =
-        state.denyCount;
-    }
-
-    // RECIENTES
-
-    addRecent(person, approved, pct);
-
-  } catch (err) {
-
-    console.error(err);
+    console.error(error);
   }
 }
 
@@ -333,5 +220,7 @@ async function pollRecognition() {
 resetPanel();
 
 setInterval(() => {
+
   pollRecognition();
-}, 1000);
+
+}, 500);  

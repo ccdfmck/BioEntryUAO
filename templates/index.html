@@ -22,6 +22,9 @@
         <span class="dot-live"></span>
         Cámara en vivo
       </div>
+      <button type="button" class="btn-register-header" onclick="abrirModal()">
+          + Registrar estudiante
+      </button>
       <button class="btn-close">✕</button>
     </div>
   </header>
@@ -169,5 +172,177 @@
 
 </div>
 <script src="{{ url_for('static', filename='app.js') }}"></script>
+<div class="modal-overlay hidden" id="modal-overlay" onclick="cerrarModal(event)">
+  <div class="modal-box">
+
+    <div class="modal-header">
+      <div>
+        <h2>Registrar estudiante</h2>
+        <p>Ingresa los datos y la foto del nuevo estudiante</p>
+      </div>
+      <button class="modal-close" onclick="cerrarModal()">✕</button>
+    </div>
+
+    <form class="modal-form" onsubmit="handleModalRegister(event)" enctype="multipart/form-data">
+
+      <div class="fields-row">
+        <div class="field-group">
+          <label>Nombre</label>
+          <div class="input-wrap">
+            <input type="text" id="m-nombre" name="nombre" placeholder="Nombre" required/>
+          </div>
+        </div>
+        <div class="field-group">
+          <label>Apellido</label>
+          <div class="input-wrap">
+            <input type="text" id="m-apellido" name="apellido" placeholder="Apellido" required/>
+          </div>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label>Código estudiantil</label>
+        <div class="input-wrap">
+          <input type="text" id="m-codigo" name="codigo" placeholder="Ej: 2210123" pattern="[0-9]{6,10}" required/>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label>Programa académico</label>
+        <div class="input-wrap select-wrap">
+          <select id="m-programa" name="programa" required>
+            <option value="" disabled selected>Selecciona un programa</option>
+            <option>Ingeniería de Sistemas</option>
+            <option>Ingeniería Industrial</option>
+            <option>Ingeniería Electrónica</option>
+            <option>Ingeniería Civil</option>
+            <option>Administración de Empresas</option>
+            <option>Diseño Industrial</option>
+            <option>Comunicación Social</option>
+            <option>Psicología</option>
+            <option>Derecho</option>
+            <option>Medicina</option>
+          </select>
+          <svg class="select-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 9l6 6 6-6"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label>Correo institucional</label>
+        <div class="input-wrap">
+          <input type="email" id="m-correo" name="correo" placeholder="codigo@uao.edu.co" required/>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label>Foto facial</label>
+        <div class="photo-zone" id="m-photo-zone" onclick="document.getElementById('m-foto-input').click()">
+          <div class="photo-placeholder" id="m-photo-placeholder">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
+            <span>Haz clic para subir foto</span>
+            <span class="photo-hint">JPG o PNG · Máx 5MB</span>
+          </div>
+          <img id="m-photo-preview" class="hidden" alt="Vista previa"/>
+          <div class="photo-remove hidden" id="m-photo-remove" onclick="mRemovePhoto(event)">✕ Quitar</div>
+        </div>
+        <input type="file" id="m-foto-input" name="foto" accept="image/jpeg,image/png" style="display:none" onchange="mPreviewPhoto(this)"/>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
+        <button type="submit" class="btn-primary-modal" id="m-reg-btn">
+          <span class="btn-text">Registrar</span>
+          <span class="btn-spinner hidden"></span>
+        </button>
+      </div>
+
+    </form>
+
+    <div id="m-reg-msg" class="auth-msg hidden" style="margin-top:10px;"></div>
+
+  </div>
+</div>
+<script>
+function abrirModal() {
+  document.getElementById('modal-overlay').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function cerrarModal(e) {
+  if (e && e.target !== document.getElementById('modal-overlay')) return;
+  document.getElementById('modal-overlay').classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+function mPreviewPhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { alert('La imagen supera los 5MB.'); input.value = ''; return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('m-photo-preview').src = e.target.result;
+    document.getElementById('m-photo-preview').classList.remove('hidden');
+    document.getElementById('m-photo-placeholder').classList.add('hidden');
+    document.getElementById('m-photo-remove').classList.remove('hidden');
+    document.getElementById('m-photo-zone').classList.add('has-photo');
+  };
+  reader.readAsDataURL(file);
+}
+
+function mRemovePhoto(e) {
+  e.stopPropagation();
+  document.getElementById('m-foto-input').value = '';
+  document.getElementById('m-photo-preview').classList.add('hidden');
+  document.getElementById('m-photo-preview').src = '';
+  document.getElementById('m-photo-placeholder').classList.remove('hidden');
+  document.getElementById('m-photo-remove').classList.add('hidden');
+  document.getElementById('m-photo-zone').classList.remove('has-photo');
+}
+
+async function handleModalRegister(e) {
+  e.preventDefault();
+  const btn     = document.getElementById('m-reg-btn');
+  const msg     = document.getElementById('m-reg-msg');
+  const text    = btn.querySelector('.btn-text');
+  const spinner = btn.querySelector('.btn-spinner');
+
+  if (!document.getElementById('m-foto-input').files[0]) {
+    msg.textContent = 'Por favor sube una foto facial.';
+    msg.className = 'auth-msg error';
+    msg.classList.remove('hidden');
+    return;
+  }
+
+  btn.disabled = true;
+  text.classList.add('hidden');
+  spinner.classList.remove('hidden');
+  msg.classList.add('hidden');
+
+  const formData = new FormData(e.target);
+  const res  = await fetch('/register', { method: 'POST', body: formData });
+  const data = await res.json();
+
+  if (data.ok) {
+    msg.textContent = '✓ Estudiante registrado exitosamente.';
+    msg.className = 'auth-msg ok';
+    msg.classList.remove('hidden');
+    e.target.reset();
+    mRemovePhoto({ stopPropagation: () => {} });
+  } else {
+    msg.textContent = data.error || 'Error al registrar.';
+    msg.className = 'auth-msg error';
+    msg.classList.remove('hidden');
+  }
+
+  btn.disabled = false;
+  text.classList.remove('hidden');
+  spinner.classList.add('hidden');
+}
+</script>
 </body>
 </html>

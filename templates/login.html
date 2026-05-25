@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>UAO | BioEntry – Iniciar Sesión</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='auth.css') }}">
+</head>
+<body>
+
+<div class="auth-page">
+
+  <!-- Panel izquierdo – branding -->
+  <div class="brand-panel">
+    <div class="brand-inner">
+      <div class="brand-logo">
+        <span class="logo-text">uao</span>
+        <span class="logo-sep">|</span>
+        <span class="logo-title">BioEntry</span>
+      </div>
+      <div class="brand-tagline">
+        <p>Sistema de acceso</p>
+        <p>por reconocimiento facial</p>
+      </div>
+      <div class="brand-deco">
+        <!-- Círculos decorativos animados -->
+        <div class="deco-ring r1"></div>
+        <div class="deco-ring r2"></div>
+        <div class="deco-ring r3"></div>
+        <!-- Ícono facial -->
+        <div class="face-icon">
+          <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+            <rect x="8" y="8" width="64" height="64" rx="16" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>
+            <circle cx="29" cy="36" r="5" stroke="white" stroke-width="2" fill="none"/>
+            <circle cx="51" cy="36" r="5" stroke="white" stroke-width="2" fill="none"/>
+            <path d="M26 54 Q40 64 54 54" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/>
+            <!-- Esquinas de escaneo -->
+            <path d="M8 20 L8 8 L20 8" stroke="rgba(255,200,100,0.7)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <path d="M60 8 L72 8 L72 20" stroke="rgba(255,200,100,0.7)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <path d="M8 60 L8 72 L20 72" stroke="rgba(255,200,100,0.7)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <path d="M60 72 L72 72 L72 60" stroke="rgba(255,200,100,0.7)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+        </div>
+      </div>
+      <div class="brand-stats">
+        <div class="bstat">
+          <span class="bstat-val">99.2%</span>
+          <span class="bstat-lbl">Precisión</span>
+        </div>
+        <div class="bstat-div"></div>
+        <div class="bstat">
+          <span class="bstat-val">&lt;0.3s</span>
+          <span class="bstat-lbl">Respuesta</span>
+        </div>
+        <div class="bstat-div"></div>
+        <div class="bstat">
+          <span class="bstat-val">24/7</span>
+          <span class="bstat-lbl">Disponible</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel derecho – formulario -->
+  <div class="form-panel">
+    <div class="form-inner">
+
+      <div class="form-header">
+        <h1>Iniciar sesión</h1>
+        <p>Accede al panel de administración</p>
+      </div>
+
+      <form class="auth-form" onsubmit="handleLogin(event)">
+
+        <div class="field-group">
+          <label for="username">Usuario</label>
+          <div class="input-wrap">
+            <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+            <input type="text" id="username" placeholder="Tu nombre de usuario" autocomplete="username" required/>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label for="password">Contraseña</label>
+          <div class="input-wrap">
+            <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" required/>
+            <button type="button" class="toggle-pw" onclick="togglePw('password', this)" aria-label="Mostrar/ocultar contraseña">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="form-options">
+          <label class="checkbox-wrap">
+            <input type="checkbox" id="remember"/>
+            <span class="custom-check"></span>
+            Recordarme
+          </label>
+          <a href="#" class="forgot-link">¿Olvidaste tu contraseña?</a>
+        </div>
+
+        <button type="submit" class="btn-primary" id="login-btn">
+          <span class="btn-text">Ingresar</span>
+          <span class="btn-spinner hidden"></span>
+        </button>
+
+        <div class="form-divider"><span>o</span></div>
+
+        <a href="/register_operador" class="btn-secondary">
+          Registrar operador
+        </a>
+
+      </form>
+
+      <div id="login-msg" class="auth-msg hidden"></div>
+
+      <p class="form-footer">
+        UAO · Sistema BioEntry &mdash; Solo personal autorizado
+      </p>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+function togglePw(inputId, btn) {
+  const input = document.getElementById(inputId);
+  input.type = input.type === 'password' ? 'text' : 'password';
+  btn.classList.toggle('active');
+}
+
+async function handleLogin(e) {
+  e.preventDefault();
+  const btn     = document.getElementById('login-btn');
+  const msg     = document.getElementById('login-msg');
+  const text    = btn.querySelector('.btn-text');
+  const spinner = btn.querySelector('.btn-spinner');
+
+  btn.disabled = true;
+  text.classList.add('hidden');
+  spinner.classList.remove('hidden');
+  msg.classList.add('hidden');
+
+  const user = document.getElementById('username').value;
+  const pass = document.getElementById('password').value;
+
+  const res  = await fetch('/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ usuario: user, password: pass })
+  });
+  const data = await res.json();
+
+  if (data.ok) {
+    msg.textContent = '✓ Acceso concedido. Redirigiendo...';
+    msg.className   = 'auth-msg ok';
+    setTimeout(() => { window.location.href = '/index'; }, 1000);
+  } else {
+    msg.textContent = 'Credenciales incorrectas. Inténtalo de nuevo.';
+    msg.className   = 'auth-msg error';
+    btn.disabled    = false;
+    text.classList.remove('hidden');
+    spinner.classList.add('hidden');
+  }
+}
+</script>
+</body>
+</html>

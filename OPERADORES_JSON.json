@@ -1,0 +1,9 @@
+[
+  {
+    "nombre": "Juan Pérez",
+    "usuario": "jperez",
+    "correo": "jperez@uao.edu.co",
+    "rol": "Administrador",
+    "password": "pbkdf2:sha256:..."
+  }
+]

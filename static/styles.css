@@ -22,7 +22,8 @@ html, body {
   font-family: 'DM Sans', sans-serif;
   background: #111;
   color: var(--ink);
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 /*LAYOUT */
@@ -607,6 +608,7 @@ aside {
   height:100%;
   object-fit:cover;
   z-index:1;
+  pointer-events:none;
 }
 
 .cam-bg{
@@ -616,4 +618,289 @@ aside {
 
 .bb-overlay{
   z-index:3;
+}
+/* ══ BOTÓN HEADER REGISTRO ════════════════════════════════ */
+.btn-register-header {
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.28);
+  color: #fff;
+  padding: 5px 14px;
+  border-radius: 6px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-register-header:hover { background: rgba(255,255,255,0.24); }
+
+/* ══ MODAL ════════════════════════════════════════════════ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+.modal-overlay.hidden { display: none; }
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.modal-box {
+  background: #FAF7F2;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 28px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.4);
+  animation: slideUp 0.25s ease;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.modal-header h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1C1410;
+  letter-spacing: -0.4px;
+}
+
+.modal-header p {
+  font-size: 12.5px;
+  color: #6b5c52;
+  margin-top: 3px;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #6b5c52;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+.modal-close:hover { background: rgba(0,0,0,0.07); }
+
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+/* Reutiliza los mismos estilos de auth.css para fields-row, field-group, input-wrap */
+.modal-form .fields-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.modal-form .field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.modal-form label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #1C1410;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.modal-form .input-wrap input,
+.modal-form .input-wrap select {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  background: #fff;
+  border: 1px solid rgba(100,70,60,0.15);
+  border-radius: 7px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  color: #1C1410;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.modal-form .input-wrap input:focus,
+.modal-form .input-wrap select:focus {
+  border-color: #7B1728;
+  box-shadow: 0 0 0 3px rgba(123,23,40,0.10);
+}
+
+.modal-form .input-wrap { position: relative; }
+
+.modal-form .select-wrap .select-arrow {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6b5c52;
+  pointer-events: none;
+}
+
+.modal-form .photo-zone {
+  background: #fff;
+  border: 2px dashed rgba(100,70,60,0.2);
+  border-radius: 8px;
+  padding: 18px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  transition: border-color 0.2s;
+  min-height: 100px;
+  justify-content: center;
+}
+.modal-form .photo-zone:hover { border-color: #7B1728; }
+.modal-form .photo-zone.has-photo { border-style: solid; border-color: #7B1728; padding: 0; overflow: hidden; }
+
+.modal-form .photo-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: #6b5c52;
+  font-size: 12.5px;
+}
+.modal-form .photo-placeholder svg { stroke: #6b5c52; opacity: 0.5; }
+.modal-form .photo-hint { font-size: 10.5px; color: #bbb; }
+
+.modal-form #m-photo-preview {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.modal-form .photo-remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: rgba(0,0,0,0.5);
+  color: #fff;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 100px;
+  cursor: pointer;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.btn-cancel {
+  height: 40px;
+  padding: 0 18px;
+  background: transparent;
+  border: 1px solid rgba(100,70,60,0.2);
+  border-radius: 7px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13.5px;
+  color: #6b5c52;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-cancel:hover { background: rgba(0,0,0,0.05); }
+
+.btn-primary-modal {
+  height: 40px;
+  padding: 0 22px;
+  background: #7B1728;
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.2s;
+}
+.btn-primary-modal:hover:not(:disabled) { background: #a32035; }
+.btn-primary-modal:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.btn-primary-modal .btn-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+.auth-msg { font-size: 13px; padding: 10px 14px; border-radius: 7px; font-weight: 500; }
+.auth-msg.ok    { background: #d4f0e2; color: #1a7a4a; }
+.auth-msg.error { background: #fde8e6; color: #c0392b; }
+.hidden { display: none !important; }
+
+.modal-overlay{
+  position: fixed !important;
+  top:0;
+  left:0;
+  width:100vw;
+  height:100vh;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  background: rgba(0,0,0,.65);
+
+  z-index: 99999 !important;
+}
+
+.modal-box{
+  position: relative;
+  z-index: 100000 !important;
+}
+
+/* evita que otros elementos tapen el modal */
+header,
+aside,
+.camera-panel,
+.video-wrapper,
+#video-feed{
+  z-index: 1;
+}
+
+.modal-overlay{
+  z-index:999999 !important;
+}
+
+.modal-box{
+  z-index:1000000 !important;
+  position:relative;
 }

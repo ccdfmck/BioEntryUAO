@@ -1,0 +1,9 @@
+[
+  {
+    "nombre": "Administrador",
+    "usuario": "admin",
+    "correo": "admin@uao.edu.co",
+    "rol": "Administrador",
+    "password": "scrypt:32768:8:1$CWtidBfIBgOinkM3$d35fedac19ed31fc4e433319424ae657c915f4588abce2c1b497e570bc7c83531d43b8780d3d9093d98514e47bcdf00e55c4cb441432f25f994d4315b2040f9d"
+  }
+]

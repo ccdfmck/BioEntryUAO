@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>UAO | BioEntry – Registrar Estudiante</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='auth.css') }}">
+</head>
+<body>
+
+<div class="auth-page register-page">
+
+  <!-- Panel izquierdo – branding -->
+  <div class="brand-panel">
+    <div class="brand-inner">
+      <div class="brand-logo">
+        <span class="logo-text">uao</span>
+        <span class="logo-sep">|</span>
+        <span class="logo-title">BioEntry</span>
+      </div>
+      <div class="brand-tagline">
+        <p>Registro de nuevos</p>
+        <p>estudiantes al sistema</p>
+      </div>
+      <div class="brand-deco">
+        <div class="deco-ring r1"></div>
+        <div class="deco-ring r2"></div>
+        <div class="deco-ring r3"></div>
+        <div class="face-icon">
+          <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+            <!-- Add user icon -->
+            <circle cx="32" cy="34" r="10" stroke="white" stroke-width="2" fill="none"/>
+            <path d="M14 62 Q14 50 32 50 Q50 50 50 62" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/>
+            <path d="M58 28 L68 28 M63 23 L63 33" stroke="rgba(255,200,100,0.9)" stroke-width="2.5" stroke-linecap="round"/>
+            <!-- Esquinas de escaneo -->
+            <path d="M2 16 L2 2 L16 2" stroke="rgba(255,200,100,0.7)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <path d="M64 2 L78 2 L78 16" stroke="rgba(255,200,100,0.7)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <path d="M2 64 L2 78 L16 78" stroke="rgba(255,200,100,0.7)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <path d="M64 78 L78 78 L78 64" stroke="rgba(255,200,100,0.7)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+        </div>
+      </div>
+      <div class="register-tips">
+        <div class="tip-item">
+          <span class="tip-num">01</span>
+          <span class="tip-txt">Completa los datos del estudiante</span>
+        </div>
+        <div class="tip-item">
+          <span class="tip-num">02</span>
+          <span class="tip-txt">Sube o toma la foto facial</span>
+        </div>
+        <div class="tip-item">
+          <span class="tip-num">03</span>
+          <span class="tip-txt">El sistema genera el embedding automáticamente</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel derecho – formulario -->
+  <div class="form-panel">
+    <div class="form-inner">
+
+      <div class="form-header">
+        <a href="login.html" class="back-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 12H5M12 5l-7 7 7 7"/>
+          </svg>
+          Volver
+        </a>
+        <h1>Registrar estudiante</h1>
+        <p>Ingresa los datos y la foto del nuevo estudiante</p>
+      </div>
+
+      <form class="auth-form" onsubmit="handleRegister(event)" enctype="multipart/form-data">
+
+        <!-- Fila doble: Nombre + Apellido -->
+        <div class="fields-row">
+          <div class="field-group">
+            <label for="nombre">Nombre</label>
+            <div class="input-wrap">
+              <input type="text" id="nombre" name="nombre" placeholder="Nombre" required/>
+            </div>
+          </div>
+          <div class="field-group">
+            <label for="apellido">Apellido</label>
+            <div class="input-wrap">
+              <input type="text" id="apellido" name="apellido" placeholder="Apellido" required/>
+            </div>
+          </div>
+        </div>
+
+        <!-- Código estudiantil -->
+        <div class="field-group">
+          <label for="codigo">Código estudiantil</label>
+          <div class="input-wrap">
+            <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="5" width="20" height="14" rx="2"/>
+              <path d="M16 10h.01M6 10h6"/>
+            </svg>
+            <input type="text" id="codigo" name="codigo" placeholder="Ej: 2210123" pattern="[0-9]{6,10}" required/>
+          </div>
+        </div>
+
+        <!-- Programa -->
+        <div class="field-group">
+          <label for="programa">Programa académico</label>
+          <div class="input-wrap select-wrap">
+            <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+              <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+            </svg>
+            <select id="programa" name="programa" required>
+              <option value="" disabled selected>Selecciona un programa</option>
+              <option>Ingeniería de Sistemas</option>
+              <option>Ingeniería Industrial</option>
+              <option>Ingeniería Electrónica</option>
+              <option>Ingeniería Civil</option>
+              <option>Administración de Empresas</option>
+              <option>Diseño Industrial</option>
+              <option>Comunicación Social</option>
+              <option>Psicología</option>
+              <option>Derecho</option>
+              <option>Medicina</option>
+            </select>
+            <svg class="select-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M6 9l6 6 6-6"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Correo -->
+        <div class="field-group">
+          <label for="correo">Correo institucional</label>
+          <div class="input-wrap">
+            <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+              <polyline points="22,6 12,13 2,6"/>
+            </svg>
+            <input type="email" id="correo" name="correo" placeholder="codigo@uao.edu.co" required/>
+          </div>
+        </div>
+
+        <!-- Foto facial -->
+        <div class="field-group">
+          <label>Foto facial</label>
+          <div class="photo-zone" id="photo-zone" onclick="document.getElementById('foto-input').click()">
+            <div class="photo-placeholder" id="photo-placeholder">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                <circle cx="12" cy="13" r="4"/>
+              </svg>
+              <span>Haz clic para subir foto</span>
+              <span class="photo-hint">JPG o PNG · Máx 5MB · Rostro visible y bien iluminado</span>
+            </div>
+            <img id="photo-preview" class="hidden" alt="Vista previa"/>
+            <div class="photo-remove hidden" id="photo-remove" onclick="removePhoto(event)">✕ Quitar</div>
+          </div>
+          <input type="file" id="foto-input" name="foto" accept="image/jpeg,image/png" style="display:none" onchange="previewPhoto(this)"/>
+        </div>
+
+        <button type="submit" class="btn-primary" id="reg-btn">
+          <span class="btn-text">Registrar estudiante</span>
+          <span class="btn-spinner hidden"></span>
+        </button>
+
+      </form>
+
+      <div id="reg-msg" class="auth-msg hidden"></div>
+
+      <p class="form-footer">
+        UAO · Sistema BioEntry &mdash; Solo personal autorizado
+      </p>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+function previewPhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    alert('La imagen supera los 5MB.');
+    input.value = '';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = e => {
+    const preview = document.getElementById('photo-preview');
+    const placeholder = document.getElementById('photo-placeholder');
+    const removeBtn = document.getElementById('photo-remove');
+    preview.src = e.target.result;
+    preview.classList.remove('hidden');
+    placeholder.classList.add('hidden');
+    removeBtn.classList.remove('hidden');
+    document.getElementById('photo-zone').classList.add('has-photo');
+  };
+  reader.readAsDataURL(file);
+}
+
+function removePhoto(e) {
+  e.stopPropagation();
+  document.getElementById('foto-input').value = '';
+  document.getElementById('photo-preview').classList.add('hidden');
+  document.getElementById('photo-preview').src = '';
+  document.getElementById('photo-placeholder').classList.remove('hidden');
+  document.getElementById('photo-remove').classList.add('hidden');
+  document.getElementById('photo-zone').classList.remove('has-photo');
+}
+
+async function handleRegister(e) {
+  e.preventDefault();
+  const btn     = document.getElementById('reg-btn');
+  const msg     = document.getElementById('reg-msg');
+  const text    = btn.querySelector('.btn-text');
+  const spinner = btn.querySelector('.btn-spinner');
+
+  if (!document.getElementById('foto-input').files[0]) {
+    msg.textContent = 'Por favor sube una foto facial antes de continuar.';
+    msg.className   = 'auth-msg error';
+    return;
+  }
+
+  btn.disabled = true;
+  text.classList.add('hidden');
+  spinner.classList.remove('hidden');
+  msg.classList.add('hidden');
+
+  const formData = new FormData(e.target);
+
+  const res  = await fetch('/register', {
+    method: 'POST',
+    body: formData
+  });
+  const data = await res.json();
+
+  if (data.ok) {
+    msg.textContent = '✓ Estudiante registrado exitosamente.';
+    msg.className   = 'auth-msg ok';
+    btn.disabled    = false;
+    text.classList.remove('hidden');
+    spinner.classList.add('hidden');
+    e.target.reset();
+    removePhoto({ stopPropagation: () => {} });
+  } else {
+    msg.textContent = data.error || 'Error al registrar. Inténtalo de nuevo.';
+    msg.className   = 'auth-msg error';
+    btn.disabled    = false;
+    text.classList.remove('hidden');
+    spinner.classList.add('hidden');
+  }
+}
+</script>
+</body>
+</html>

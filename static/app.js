@@ -19,8 +19,22 @@ function updateClock() {
 
   const now = new Date();
 
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+  const months = ['January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'];
+
+  let h = now.getHours();
+
+  const ampm = h >= 12 ? 'PM' : 'AM';
+
+  h = h % 12 || 12;
+
+  const mm = String(now.getMinutes()).padStart(2, '0');
+  const ss = String(now.getSeconds()).padStart(2, '0');
+
   document.getElementById('cam-clock').innerHTML =
-    `${now.toLocaleDateString()}<br>${now.toLocaleTimeString()}`;
+    `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}<br>${h}:${mm}:${ss} ${ampm}`;
 }
 
 updateClock();
@@ -33,11 +47,19 @@ setInterval(updateClock, 1000);
 
 function nowTime() {
 
-  return new Date().toLocaleTimeString();
+  const now = new Date();
+
+  let h = now.getHours();
+
+  const ampm = h >= 12 ? 'PM' : 'AM';
+
+  h = h % 12 || 12;
+
+  return `${h}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')} ${ampm}`;
 }
 
 // ===============================
-// ACCURACY
+// ACCURACY BAR
 // ===============================
 
 function setAccuracy(pct, approved) {
@@ -58,12 +80,10 @@ function setAccuracy(pct, approved) {
 }
 
 // ===============================
-// RESET
+// RESET PANEL
 // ===============================
 
 function resetPanel() {
-
-  state.lastPerson = null;
 
   document.getElementById('p-name').textContent =
     'Esperando identificación...';
@@ -84,9 +104,33 @@ function resetPanel() {
 
   st.className = 'status-tag waiting';
 
-  document.getElementById('bb-overlay').classList.add('hidden');
+  // ===============================
+  // RESET ACCURACY
+  // ===============================
 
-  document.getElementById('no-face-msg').classList.remove('hidden');
+  const accVal = document.getElementById('acc-val');
+
+  const accFill = document.getElementById('acc-fill');
+
+  accVal.textContent = '--%';
+
+  accVal.className = 'acc-value waiting';
+
+  accFill.style.width = '0%';
+
+  accFill.style.background = '#555';
+
+  // ===============================
+  // RESET BOUNDING BOX
+  // ===============================
+
+  document.getElementById('bb-overlay')
+    .classList.add('hidden');
+
+  document.getElementById('no-face-msg')
+    .classList.remove('hidden');
+
+  state.lastPerson = null;
 }
 
 // ===============================
@@ -130,7 +174,6 @@ function addRecent(person, approved, pct) {
 
   document.getElementById('recent-list').innerHTML =
     state.recentList.map(r => `
-
       <div class="recent-item">
 
         <div class="ri-left">
@@ -156,7 +199,6 @@ function addRecent(person, approved, pct) {
         </span>
 
       </div>
-
     `).join('');
 }
 
@@ -172,8 +214,14 @@ async function pollRecognition() {
 
     const data = await response.json();
 
+    // ===============================
+    // NO HAY ROSTRO
+    // ===============================
+
     if (!data.detected) {
+
       resetPanel();
+
       return;
     }
 
@@ -197,9 +245,11 @@ async function pollRecognition() {
 
     const pct = parseInt(data.confidence);
 
-    const approved = pct >= THRESHOLD;
+    const approved = data.approved;
 
+    // ===============================
     // PERFIL
+    // ===============================
 
     document.getElementById('avatar').textContent =
       person.initials;
@@ -219,7 +269,9 @@ async function pollRecognition() {
     document.getElementById('a-time').textContent =
       nowTime();
 
+    // ===============================
     // STATUS
+    // ===============================
 
     const st = document.getElementById('a-status');
 
@@ -229,28 +281,17 @@ async function pollRecognition() {
     st.className =
       'status-tag ' + (approved ? 'ok' : 'deny');
 
+    // ===============================
     // ACCURACY
+    // ===============================
 
     setAccuracy(pct, approved);
 
-    // BOUNDING BOX
-
-    const overlay = document.getElementById('bb-overlay');
-
-    const bbox = document.getElementById('bbox');
-
-    const bbLabel = document.getElementById('bb-label');
-
-    const bbConf = document.getElementById('bb-conf');
-
-    overlay.classList.remove('hidden');
-
-
-    // SOLO CONTAR NUEVO USUARIO
+    // ===============================
+    // SOLO MOSTRAR FLASH SI CAMBIA PERSONA
+    // ===============================
 
     if (state.lastPerson !== person.name) {
-
-      state.lastPerson = person.name;
 
       showFlash(approved);
 
@@ -270,6 +311,8 @@ async function pollRecognition() {
       }
 
       addRecent(person, approved, pct);
+
+      state.lastPerson = person.name;
     }
 
   } catch (err) {

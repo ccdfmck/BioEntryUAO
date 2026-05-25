@@ -133,7 +133,17 @@ def generate_frames():
                     enforce_detection=False
                 )
 
-                if len(objs) > 0:
+                # ============================================
+                # NO HAY ROSTRO
+                # ============================================
+
+                if len(objs) == 0:
+
+                    face_data = {
+                        "detected": False
+                    }
+
+                else:
 
                     obj = objs[0]
 
@@ -165,7 +175,7 @@ def generate_frames():
                     confidence = round(similarity * 100, 2)
 
                     # ============================================
-                    # SI RECONOCE
+                    # RECONOCIDO
                     # ============================================
 
                     if similarity > THRESHOLD:
@@ -195,6 +205,7 @@ def generate_frames():
 
                         face_data = {
                             "detected": True,
+                            "approved": True,
                             "name": nombre_real,
                             "codigo": codigo,
                             "rol": rol,
@@ -206,17 +217,36 @@ def generate_frames():
                             "h": int(h)
                         }
 
+                    # ============================================
+                    # DESCONOCIDO
+                    # ============================================
+
                     else:
 
-                        face_data = {
-                            "detected": False
-                        }
+                        # SOLO DENEGAR SI REALMENTE HAY UNA CARA
 
-                else:
+                        if similarity > 0.15:
 
-                    face_data = {
-                        "detected": False
-                    }
+                            face_data = {
+                                "detected": True,
+                                "approved": False,
+                                "name": "Desconocido",
+                                "codigo": "N/A",
+                                "rol": "No registrado",
+                                "programa": "Acceso denegado",
+                                "confidence": confidence,
+                                "x": int(x),
+                                "y": int(y),
+                                "w": int(w),
+                                "h": int(h)
+                            }
+
+                        else:
+
+                            # probablemente no hay rostro
+                            face_data = {
+                                "detected": False
+                            }
 
             except Exception as e:
                 print("Error:", e)
@@ -232,13 +262,33 @@ def generate_frames():
             w = face_data["w"]
             h = face_data["h"]
 
+            # ============================================
+            # COLOR
+            # ============================================
+
+            if face_data["approved"]:
+
+                color = (0, 255, 0)
+
+            else:
+
+                color = (0, 0, 255)
+
+            # ============================================
+            # RECTÁNGULO
+            # ============================================
+
             cv2.rectangle(
                 frame,
                 (x, y),
                 (x + w, y + h),
-                (0, 255, 0),
+                color,
                 2
             )
+
+            # ============================================
+            # TEXTO
+            # ============================================
 
             cv2.putText(
                 frame,
@@ -246,7 +296,7 @@ def generate_frames():
                 (x, y - 10),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.7,
-                (0, 255, 0),
+                color,
                 2
             )
 

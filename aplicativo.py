@@ -292,7 +292,7 @@ def generate_frames():
 
             cv2.putText(
                 frame,
-                f'{face_data["name"]} {face_data["confidence"]:.1f}%',
+                f'{face_data["name"]}',
                 (x, y - 10),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.7,

@@ -617,3 +617,359 @@ aside {
 .bb-overlay{
   z-index:3;
 }
+
+
+
+/* ══════════════════════════════════════════════
+   BOTÓN ADMIN (header)
+══════════════════════════════════════════════ */
+.btn-admin {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.28);
+  color: #fff;
+  padding: 5px 14px;
+  border-radius: 6px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-admin:hover { background: rgba(255,255,255,0.24); }
+
+/* ══════════════════════════════════════════════
+   MODAL BASE
+══════════════════════════════════════════════ */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15,10,8,0.72);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+.modal-backdrop.hidden { display: none; }
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.modal-box {
+  background: var(--cream);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  width: 420px;
+  max-width: 95vw;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.35);
+  animation: slideUp 0.22s cubic-bezier(0.4,0,0.2,1);
+  overflow: hidden;
+}
+
+.modal-wide {
+  width: 680px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(18px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: var(--cr);
+  color: #fff;
+}
+
+.modal-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.modal-close {
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.25);
+  color: #fff;
+  width: 26px; height: 26px;
+  border-radius: 5px;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.modal-close:hover { background: rgba(255,255,255,0.28); }
+
+.modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-desc {
+  font-size: 13px;
+  color: var(--ink-m);
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+  background: var(--cream-dk);
+}
+
+.modal-error {
+  background: var(--deny-bg);
+  color: var(--deny);
+  border: 1px solid rgba(192,57,43,0.25);
+  border-radius: 7px;
+  padding: 9px 13px;
+  font-size: 12.5px;
+  font-weight: 600;
+  margin-top: 12px;
+}
+
+.modal-success {
+  background: var(--ok-bg);
+  color: var(--ok);
+  border: 1px solid rgba(26,122,74,0.25);
+  border-radius: 7px;
+  padding: 9px 13px;
+  font-size: 12.5px;
+  font-weight: 600;
+  margin-top: 12px;
+}
+
+.modal-error.hidden, .modal-success.hidden { display: none; }
+
+/* ══════════════════════════════════════════════
+   BOTONES
+══════════════════════════════════════════════ */
+.btn-primary {
+  display: flex; align-items: center; gap: 7px;
+  background: var(--cr);
+  color: #fff;
+  border: none;
+  padding: 9px 20px;
+  border-radius: 7px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-primary:hover { background: var(--cr-lt); }
+
+.btn-secondary {
+  background: #fff;
+  color: var(--ink);
+  border: 1px solid var(--border);
+  padding: 9px 16px;
+  border-radius: 7px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-secondary:hover { background: var(--cream-dk); }
+
+.btn-spinner {
+  width: 13px; height: 13px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+.btn-spinner.hidden { display: none; }
+
+/* ══════════════════════════════════════════════
+   CAMPOS
+══════════════════════════════════════════════ */
+.field-group {
+  margin-bottom: 14px;
+}
+
+.field-label {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+  color: var(--ink-m);
+  margin-bottom: 5px;
+}
+
+.field-input {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 7px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  color: var(--ink);
+  background: #fff;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.field-input:focus { border-color: var(--cr); }
+
+.field-select { cursor: pointer; }
+
+.fields-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 16px;
+}
+
+/* ══════════════════════════════════════════════
+   FOTO UPLOAD
+══════════════════════════════════════════════ */
+.photo-upload-area {
+  border: 2px dashed var(--border);
+  border-radius: 10px;
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  position: relative;
+  overflow: hidden;
+  background: #fff;
+}
+.photo-upload-area:hover  { border-color: var(--cr); background: #fdf5f5; }
+.photo-upload-area.drag-over { border-color: var(--cr); background: #fdf0f0; }
+
+.photo-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-m);
+  pointer-events: none;
+}
+.photo-placeholder p { font-size: 12.5px; }
+.photo-placeholder .upload-link { color: var(--cr); font-weight: 600; }
+.photo-placeholder .upload-hint { font-size: 10.5px; color: #bbb; }
+
+.photo-preview {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.photo-preview img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+.photo-preview.hidden { display: none; }
+
+/* ══════════════════════════════════════════════
+   TABS
+══════════════════════════════════════════════ */
+.admin-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: #fff;
+}
+
+.admin-tab {
+  flex: 1;
+  padding: 11px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-m);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.admin-tab.active {
+  color: var(--cr);
+  border-bottom-color: var(--cr);
+}
+
+.tab-content.hidden { display: none; }
+
+/* ══════════════════════════════════════════════
+   LISTA DE USUARIOS
+══════════════════════════════════════════════ */
+.user-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.list-loading {
+  font-size: 12.5px;
+  color: var(--ink-m);
+  padding: 12px 0;
+  font-style: italic;
+}
+
+.user-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 11px 14px;
+  animation: fadeSlide 0.3s ease;
+}
+
+.user-item-info { display: flex; align-items: center; gap: 11px; }
+
+.user-item-avatar {
+  width: 36px; height: 36px;
+  border-radius: 7px;
+  background: var(--cream-dk);
+  border: 2px solid var(--cr);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 12px; color: var(--cr);
+  flex-shrink: 0;
+}
+
+.user-item-name { font-size: 13px; font-weight: 700; color: var(--ink); }
+.user-item-meta { font-size: 11px; color: var(--ink-m); margin-top: 1px; }
+
+.btn-delete {
+  background: var(--deny-bg);
+  color: var(--deny);
+  border: 1px solid rgba(192,57,43,0.2);
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.btn-delete:hover { background: #f5c6c2; }

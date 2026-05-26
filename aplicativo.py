@@ -1,4 +1,4 @@
-from flask import Flask, render_template, Response, jsonify
+from flask import Flask, render_template, Response, jsonify, request
 import cv2
 import os
 import numpy as np
@@ -6,17 +6,17 @@ import faiss
 from deepface import DeepFace
 import sqlite3
 from datetime import datetime
+import shutil
 
 app = Flask(__name__)
 
 # ============================================
-# SQLITE — usuarios + accesos
+# SQLITE
 # ============================================
 
 conn = sqlite3.connect("usuarios.db", check_same_thread=False)
 cursor = conn.cursor()
 
-# Crear tabla de accesos si no existe
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS accesos (
     id        INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -34,62 +34,72 @@ conn.commit()
 # ============================================
 
 DB_PATH   = "database"
-THRESHOLD = 0.6          # menor = más estricto
+THRESHOLD = 0.6
 
 # ============================================
-# CARGAR EMBEDDINGS
+# ESTADO GLOBAL DE EMBEDDINGS
 # ============================================
 
-embeddings = []
-labels     = []
+embeddings_store = {
+    "embeddings": None,
+    "labels":     [],
+    "index":      None
+}
 
-print("Cargando base de rostros...")
+def load_embeddings():
+    """Carga (o recarga) embeddings desde la carpeta database/."""
+    embeddings = []
+    labels     = []
 
-for file in os.listdir(DB_PATH):
+    print("Cargando base de rostros...")
 
-    if not file.lower().endswith((".jpg", ".jpeg", ".png")):
-        continue
+    for file in os.listdir(DB_PATH):
+        if not file.lower().endswith((".jpg", ".jpeg", ".png")):
+            continue
 
-    path = os.path.join(DB_PATH, file)
+        path = os.path.join(DB_PATH, file)
 
-    try:
+        try:
+            objs = DeepFace.represent(
+                img_path          = path,
+                model_name        = "ArcFace",
+                detector_backend  = "retinaface",
+                enforce_detection = False
+            )
 
-        objs = DeepFace.represent(
-            img_path          = path,
-            model_name        = "ArcFace",
-            detector_backend  = "retinaface",   # ← igual que al construir la BD
-            enforce_detection = False
-        )
+            if objs:
+                embeddings.append(objs[0]["embedding"])
+                labels.append(os.path.splitext(file)[0])
+                print(f"  ✓ {os.path.splitext(file)[0]}")
 
-        if objs:
-            embeddings.append(objs[0]["embedding"])
-            labels.append(os.path.splitext(file)[0])
-            print(f"  ✓ {os.path.splitext(file)[0]}")
+        except Exception as e:
+            print("  Error:", e)
 
-    except Exception as e:
-        print("  Error:", e)
+    if not embeddings:
+        print("⚠️  No se cargaron embeddings.")
+        return
 
-embeddings = np.array(embeddings).astype("float32")
-faiss.normalize_L2(embeddings)
-dimension  = embeddings.shape[1]
+    emb_arr = np.array(embeddings).astype("float32")
+    faiss.normalize_L2(emb_arr)
+
+    idx = faiss.IndexFlatIP(emb_arr.shape[1])
+    idx.add(emb_arr)
+
+    embeddings_store["embeddings"] = emb_arr
+    embeddings_store["labels"]     = labels
+    embeddings_store["index"]      = idx
+
+    print(f"FAISS listo — {len(labels)} persona(s)")
+
+load_embeddings()
 
 # ============================================
-# FAISS
-# ============================================
-
-index = faiss.IndexFlatIP(dimension)
-index.add(embeddings)
-
-print(f"FAISS listo — {len(labels)} persona(s) registrada(s)")
-
-# ============================================
-# MÉTRICAS EN MEMORIA (para el endpoint)
+# MÉTRICAS
 # ============================================
 
 metrics = {
     "total_ok":   0,
-    "total_deny": 0,
-    "registered": len(labels)
+    "total_deny": 0
 }
 
 # ============================================
@@ -100,36 +110,27 @@ camera = cv2.VideoCapture(0)
 camera.set(cv2.CAP_PROP_FRAME_WIDTH,  640)
 camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
-face_data = {"detected": False}
-
-# último acceso registrado para no duplicar en BD
-_last_logged = {"name": None, "ts": 0}
+face_data     = {"detected": False}
+_last_logged  = {"name": None, "ts": 0}
 
 # ============================================
 # VIDEO STREAM
 # ============================================
 
 def generate_frames():
-
     global face_data
-
     frame_count = 0
 
     while True:
-
         success, frame = camera.read()
-
         if not success:
             break
 
         frame_count += 1
         frame = cv2.flip(frame, 1)
 
-        # Analizar cada 15 frames
         if frame_count % 15 == 0:
-
             try:
-
                 objs = DeepFace.represent(
                     img_path          = frame,
                     model_name        = "ArcFace",
@@ -137,40 +138,36 @@ def generate_frames():
                     enforce_detection = False
                 )
 
-                if not objs:
+                index  = embeddings_store["index"]
+                labels = embeddings_store["labels"]
 
+                if not objs or index is None:
                     face_data = {"detected": False}
-
                 else:
+                    obj         = objs[0]
+                    embedding   = obj["embedding"]
+                    facial_area = obj["facial_area"]
 
-                    obj          = objs[0]
-                    embedding    = obj["embedding"]
-                    facial_area  = obj["facial_area"]
-
-                    x = facial_area["x"];  y = facial_area["y"]
-                    w = facial_area["w"];  h = facial_area["h"]
+                    x = facial_area["x"]; y = facial_area["y"]
+                    w = facial_area["w"]; h = facial_area["h"]
 
                     vec = np.array([embedding]).astype("float32")
                     faiss.normalize_L2(vec)
 
-                    D, I = index.search(vec, 1)
-                    similarity = float(D[0][0])
-                    confidence = round(similarity * 100, 2)
+                    D, I   = index.search(vec, 1)
+                    sim    = float(D[0][0])
+                    conf   = round(sim * 100, 2)
 
-                    print(f"Similitud: {similarity:.4f}  |  Persona: {labels[I[0][0]]}")
+                    print(f"Similitud: {sim:.4f}  |  {labels[I[0][0]]}")
 
-                    # ── RECONOCIDO ────────────────────────────────────────
-                    if similarity > THRESHOLD:
-
+                    if sim > THRESHOLD:
                         name = labels[I[0][0]]
-
                         cursor.execute(
                             "SELECT nombre, codigo, rol, programa "
                             "FROM usuarios WHERE archivo LIKE ?",
                             (f"{name}%",)
                         )
                         user = cursor.fetchone()
-
                         if user:
                             nombre_real, codigo, rol, programa = user
                         else:
@@ -178,97 +175,66 @@ def generate_frames():
                             codigo = rol = programa = "N/A"
 
                         face_data = {
-                            "detected":  True,
-                            "approved":  True,
-                            "name":      nombre_real,
-                            "codigo":    codigo,
-                            "rol":       rol,
-                            "programa":  programa,
-                            "confidence": confidence,
+                            "detected": True, "approved": True,
+                            "name": nombre_real, "codigo": codigo,
+                            "rol": rol, "programa": programa,
+                            "confidence": conf,
                             "x": int(x), "y": int(y),
                             "w": int(w), "h": int(h)
                         }
+                        _log_access(nombre_real, codigo, "aprobado", conf)
 
-                        _log_access(nombre_real, codigo, "aprobado", confidence)
-
-                    # ── DESCONOCIDO ───────────────────────────────────────
                     else:
-
-                        if similarity > 0.15:
-
+                        if sim > 0.15:
                             face_data = {
-                                "detected":  True,
-                                "approved":  False,
-                                "name":      "Desconocido",
-                                "codigo":    "N/A",
-                                "rol":       "No registrado",
-                                "programa":  "Acceso denegado",
-                                "confidence": confidence,
+                                "detected": True, "approved": False,
+                                "name": "Desconocido", "codigo": "N/A",
+                                "rol": "No registrado", "programa": "Acceso denegado",
+                                "confidence": conf,
                                 "x": int(x), "y": int(y),
                                 "w": int(w), "h": int(h)
                             }
-
-                            _log_access("Desconocido", "N/A", "denegado", confidence)
-
+                            _log_access("Desconocido", "N/A", "denegado", conf)
                         else:
-
                             face_data = {"detected": False}
 
             except Exception as e:
                 print("Error:", e)
 
-        # ── Dibujar resultado ─────────────────────────────────────────────
         if face_data.get("detected"):
-
-            x = face_data["x"];  y = face_data["y"]
-            w = face_data["w"];  h = face_data["h"]
+            x = face_data["x"]; y = face_data["y"]
+            w = face_data["w"]; h = face_data["h"]
             color = (0, 255, 0) if face_data["approved"] else (0, 0, 255)
-
             cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
-            cv2.putText(
-                frame, face_data["name"],
-                (x, y - 10),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2
-            )
+            cv2.putText(frame, face_data["name"],
+                        (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
 
         ret, buffer = cv2.imencode(".jpg", frame)
-        yield (
-            b"--frame\r\n"
-            b"Content-Type: image/jpeg\r\n\r\n" +
-            buffer.tobytes() +
-            b"\r\n"
-        )
+        yield (b"--frame\r\nContent-Type: image/jpeg\r\n\r\n" +
+               buffer.tobytes() + b"\r\n")
 
 # ============================================
-# HELPER: registrar acceso sin duplicar
+# HELPER: log acceso
 # ============================================
 
 def _log_access(nombre, codigo, resultado, confianza):
-    """Guarda el acceso en la BD y actualiza métricas.
-    Evita duplicados: no registra el mismo nombre si pasaron < 5 s."""
-
     now = datetime.now().timestamp()
-
     if _last_logged["name"] == nombre and (now - _last_logged["ts"]) < 5:
         return
-
     _last_logged["name"] = nombre
     _last_logged["ts"]   = now
-
     cursor.execute(
-        "INSERT INTO accesos (nombre, codigo, resultado, confianza) "
-        "VALUES (?, ?, ?, ?)",
+        "INSERT INTO accesos (nombre, codigo, resultado, confianza) VALUES (?, ?, ?, ?)",
         (nombre, codigo, resultado, confianza)
     )
     conn.commit()
-
     if resultado == "aprobado":
         metrics["total_ok"]   += 1
     else:
         metrics["total_deny"] += 1
 
 # ============================================
-# ROUTES
+# ROUTES — vistas
 # ============================================
 
 @app.route("/")
@@ -277,10 +243,8 @@ def home():
 
 @app.route("/video")
 def video():
-    return Response(
-        generate_frames(),
-        mimetype="multipart/x-mixed-replace; boundary=frame"
-    )
+    return Response(generate_frames(),
+                    mimetype="multipart/x-mixed-replace; boundary=frame")
 
 @app.route("/face_data")
 def get_face_data():
@@ -288,36 +252,108 @@ def get_face_data():
 
 @app.route("/metrics")
 def get_metrics():
-    """Devuelve contadores globales + historial de hoy."""
-
     today = datetime.now().strftime("%Y-%m-%d")
-
     cursor.execute(
         "SELECT nombre, codigo, resultado, confianza, timestamp "
-        "FROM accesos "
-        "WHERE DATE(timestamp) = ? "
+        "FROM accesos WHERE DATE(timestamp) = ? "
         "ORDER BY timestamp DESC LIMIT 50",
         (today,)
     )
-
     rows = cursor.fetchall()
-    history = [
-        {
-            "nombre":    r[0],
-            "codigo":    r[1],
-            "resultado": r[2],
-            "confianza": r[3],
-            "timestamp": r[4]
-        }
-        for r in rows
-    ]
-
+    history = [{"nombre": r[0], "codigo": r[1], "resultado": r[2],
+                "confianza": r[3], "timestamp": r[4]} for r in rows]
     return jsonify({
-        "registered": metrics["registered"],
+        "registered": len(embeddings_store["labels"]),
         "total_ok":   metrics["total_ok"],
         "total_deny": metrics["total_deny"],
         "history":    history
     })
+
+# ============================================
+# ROUTES — admin
+# ============================================
+
+ADMIN_PASSWORD = "uao2024"   # ← cambia esto
+
+@app.route("/admin/login", methods=["POST"])
+def admin_login():
+    data = request.get_json()
+    if data.get("password") == ADMIN_PASSWORD:
+        return jsonify({"ok": True})
+    return jsonify({"ok": False, "error": "Contraseña incorrecta"}), 401
+
+
+@app.route("/admin/usuarios")
+def admin_usuarios():
+    cursor.execute(
+        "SELECT id, nombre, codigo, rol, programa, archivo FROM usuarios ORDER BY id DESC"
+    )
+    rows = cursor.fetchall()
+    return jsonify([
+        {"id": r[0], "nombre": r[1], "codigo": r[2],
+         "rol": r[3], "programa": r[4], "archivo": r[5]}
+        for r in rows
+    ])
+
+
+@app.route("/admin/agregar", methods=["POST"])
+def admin_agregar():
+    nombre   = request.form.get("nombre", "").strip()
+    codigo   = request.form.get("codigo", "").strip()
+    rol      = request.form.get("rol", "").strip()
+    programa = request.form.get("programa", "").strip()
+    foto     = request.files.get("foto")
+
+    if not all([nombre, codigo, rol, programa, foto]):
+        return jsonify({"ok": False, "error": "Faltan campos"}), 400
+
+    # Nombre de archivo limpio
+    nombre_archivo = nombre.replace(" ", "") + os.path.splitext(foto.filename)[1]
+    ruta_foto      = os.path.join(DB_PATH, nombre_archivo)
+
+    # Guardar foto
+    foto.save(ruta_foto)
+
+    # Insertar en BD
+    try:
+        cursor.execute(
+            "INSERT INTO usuarios (nombre, codigo, rol, programa, archivo) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (nombre, codigo, rol, programa, nombre_archivo)
+        )
+        conn.commit()
+    except sqlite3.IntegrityError:
+        os.remove(ruta_foto)
+        return jsonify({"ok": False, "error": "El usuario ya existe"}), 409
+
+    # Recargar embeddings en caliente
+    load_embeddings()
+
+    return jsonify({"ok": True, "archivo": nombre_archivo})
+
+
+@app.route("/admin/eliminar/<int:uid>", methods=["DELETE"])
+def admin_eliminar(uid):
+    cursor.execute("SELECT archivo FROM usuarios WHERE id = ?", (uid,))
+    row = cursor.fetchone()
+    if not row:
+        return jsonify({"ok": False, "error": "Usuario no encontrado"}), 404
+
+    archivo = row[0]
+    ruta    = os.path.join(DB_PATH, archivo)
+
+    # Eliminar foto si existe
+    if os.path.exists(ruta):
+        os.remove(ruta)
+
+    cursor.execute("DELETE FROM usuarios WHERE id = ?", (uid,))
+    conn.commit()
+
+    # Recargar embeddings
+    load_embeddings()
+
+    return jsonify({"ok": True})
+
 
 # ============================================
 # RUN

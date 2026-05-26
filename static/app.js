@@ -131,6 +131,8 @@ function renderRecent(list) {
 // POLL METRICS
 // ===============================
 
+let lastHistorySignature = ''; // FIX: firma para detectar cambios en la lista
+
 async function pollMetrics() {
   try {
     const res  = await fetch('/metrics');
@@ -138,7 +140,13 @@ async function pollMetrics() {
     document.getElementById('stat-registered').textContent = data.registered;
     document.getElementById('stat-ok').textContent         = data.total_ok;
     document.getElementById('stat-deny').textContent       = data.total_deny;
-    renderRecent(data.history);
+
+    // FIX: solo re-renderiza si la lista cambió
+    const signature = data.history.map(r => r.timestamp + r.nombre).join('|');
+    if (signature !== lastHistorySignature) {
+      lastHistorySignature = signature;
+      renderRecent(data.history);
+    }
   } catch(e) { console.error('metrics:', e); }
 }
 

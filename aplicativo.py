@@ -252,20 +252,35 @@ def get_face_data():
 
 @app.route("/metrics")
 def get_metrics():
-    today = datetime.now().strftime("%Y-%m-%d")
+    # FIX: leer contadores directo de BD (no dependen de RAM ni reinicios)
+    cursor.execute("SELECT COUNT(*) FROM accesos WHERE resultado='aprobado'")
+    total_ok = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM accesos WHERE resultado='denegado'")
+    total_deny = cursor.fetchone()[0]
+
+    # FIX: ORDER BY id DESC elimina el problema de zona horaria UTC vs Colombia
     cursor.execute(
         "SELECT nombre, codigo, resultado, confianza, timestamp "
-        "FROM accesos WHERE DATE(timestamp) = ? "
-        "ORDER BY timestamp DESC LIMIT 50",
-        (today,)
+        "FROM accesos "
+        "ORDER BY id DESC LIMIT 6"
     )
     rows = cursor.fetchall()
-    history = [{"nombre": r[0], "codigo": r[1], "resultado": r[2],
-                "confianza": r[3], "timestamp": r[4]} for r in rows]
+    history = [
+        {
+            "nombre":    r[0],
+            "codigo":    r[1],
+            "resultado": r[2],
+            "confianza": r[3],
+            "timestamp": r[4]
+        }
+        for r in rows
+    ]
+
     return jsonify({
         "registered": len(embeddings_store["labels"]),
-        "total_ok":   metrics["total_ok"],
-        "total_deny": metrics["total_deny"],
+        "total_ok":   total_ok,
+        "total_deny": total_deny,
         "history":    history
     })
 
@@ -273,7 +288,7 @@ def get_metrics():
 # ROUTES — admin
 # ============================================
 
-ADMIN_PASSWORD = "uao2024"   # ← cambia esto
+ADMIN_PASSWORD = "uao2024"
 
 @app.route("/admin/login", methods=["POST"])
 def admin_login():
@@ -307,14 +322,11 @@ def admin_agregar():
     if not all([nombre, codigo, rol, programa, foto]):
         return jsonify({"ok": False, "error": "Faltan campos"}), 400
 
-    # Nombre de archivo limpio
     nombre_archivo = nombre.replace(" ", "") + os.path.splitext(foto.filename)[1]
     ruta_foto      = os.path.join(DB_PATH, nombre_archivo)
 
-    # Guardar foto
     foto.save(ruta_foto)
 
-    # Insertar en BD
     try:
         cursor.execute(
             "INSERT INTO usuarios (nombre, codigo, rol, programa, archivo) "
@@ -326,9 +338,7 @@ def admin_agregar():
         os.remove(ruta_foto)
         return jsonify({"ok": False, "error": "El usuario ya existe"}), 409
 
-    # Recargar embeddings en caliente
     load_embeddings()
-
     return jsonify({"ok": True, "archivo": nombre_archivo})
 
 
@@ -342,16 +352,13 @@ def admin_eliminar(uid):
     archivo = row[0]
     ruta    = os.path.join(DB_PATH, archivo)
 
-    # Eliminar foto si existe
     if os.path.exists(ruta):
         os.remove(ruta)
 
     cursor.execute("DELETE FROM usuarios WHERE id = ?", (uid,))
     conn.commit()
 
-    # Recargar embeddings
     load_embeddings()
-
     return jsonify({"ok": True})
 
 

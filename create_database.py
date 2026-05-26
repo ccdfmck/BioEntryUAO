@@ -1,17 +1,11 @@
 import sqlite3
 import os
 
-# =========================
-# CONEXIÓN
-# =========================
-
+#connectar
 conn = sqlite3.connect("usuarios.db")
 cursor = conn.cursor()
 
-# =========================
-# CREAR TABLA
-# =========================
-
+#crear la tabla
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS usuarios (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -23,10 +17,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
 )
 """)
 
-# =========================
-# USUARIOS NUEVOS
-# =========================
-
+#nuevos usuarios
 usuarios = [
 
     ("Lulu 99", "223001", "Estudiante", "Ingeniería Sistemas", "Lulu99.jpg"),
@@ -38,10 +29,7 @@ usuarios = [
     ("Migueol Angel Vanegas Daza", "2233004", "Estudiante", "Comunicación", "MiguelAngelVanegasDaza.jpeg")
 ]
 
-# =========================
-# INSERTAR SIN DUPLICAR
-# =========================
-
+#para insertar sin que se dupliquen 
 for usuario in usuarios:
 
     nombre, codigo, rol, programa, archivo = usuario
@@ -66,10 +54,7 @@ for usuario in usuarios:
 
         print(f"Agregado: {nombre}")
 
-# =========================
-# GUARDAR
-# =========================
-
+#save
 conn.commit()
 conn.close()
 

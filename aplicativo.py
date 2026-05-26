@@ -288,7 +288,7 @@ def get_metrics():
 # ROUTES — admin
 # ============================================
 
-ADMIN_PASSWORD = "uao2024"
+ADMIN_PASSWORD = "uao2026"
 
 @app.route("/admin/login", methods=["POST"])
 def admin_login():

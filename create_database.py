@@ -33,7 +33,9 @@ usuarios = [
 
     ("Daniela Valverde Moreno", "223002", "Estudiante", "Ingeniería Mecatrónica", "DanielaValverdeMoreno.jpeg"),
 
-    ("Juan David Silva Colorado", "2233003", "Estudiante", "Ingenieria Multimedia", "JuanDavidSilvaColorado.jpeg")
+    ("Juan David Silva Colorado", "2233003", "Estudiante", "Ingenieria Multimedia", "JuanDavidSilvaColorado.jpeg"),
+
+    ("Migueol Angel Vanegas Daza", "2233004", "Estudiante", "Comunicación", "MiguelAngelVanegasDaza.jpeg")
 ]
 
 # =========================

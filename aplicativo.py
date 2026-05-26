@@ -5,31 +5,43 @@ import numpy as np
 import faiss
 from deepface import DeepFace
 import sqlite3
+from datetime import datetime
 
 app = Flask(__name__)
 
 # ============================================
-# SQLITE
+# SQLITE — usuarios + accesos
 # ============================================
 
 conn = sqlite3.connect("usuarios.db", check_same_thread=False)
 cursor = conn.cursor()
 
+# Crear tabla de accesos si no existe
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS accesos (
+    id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    nombre    TEXT,
+    codigo    TEXT,
+    resultado TEXT,
+    confianza REAL,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+)
+""")
+conn.commit()
+
 # ============================================
 # CONFIG
 # ============================================
 
-DB_PATH = "database"
-
-# menor = más estricto
-THRESHOLD = 0.6
+DB_PATH   = "database"
+THRESHOLD = 0.6          # menor = más estricto
 
 # ============================================
 # CARGAR EMBEDDINGS
 # ============================================
 
 embeddings = []
-labels = []
+labels     = []
 
 print("Cargando base de rostros...")
 
@@ -43,58 +55,55 @@ for file in os.listdir(DB_PATH):
     try:
 
         objs = DeepFace.represent(
-            img_path=path,
-            model_name="ArcFace",
-            detector_backend="opencv",
-            enforce_detection=False
+            img_path          = path,
+            model_name        = "ArcFace",
+            detector_backend  = "retinaface",   # ← igual que al construir la BD
+            enforce_detection = False
         )
 
-        if len(objs) > 0:
-
-            embedding = objs[0]["embedding"]
-
-            embeddings.append(embedding)
-
-            name = os.path.splitext(file)[0]
-
-            labels.append(name)
-
-            print(f"Cargado: {name}")
+        if objs:
+            embeddings.append(objs[0]["embedding"])
+            labels.append(os.path.splitext(file)[0])
+            print(f"  ✓ {os.path.splitext(file)[0]}")
 
     except Exception as e:
-        print("Error:", e)
+        print("  Error:", e)
 
 embeddings = np.array(embeddings).astype("float32")
-
-# NORMALIZAR
 faiss.normalize_L2(embeddings)
-
-dimension = embeddings.shape[1]
+dimension  = embeddings.shape[1]
 
 # ============================================
 # FAISS
 # ============================================
 
 index = faiss.IndexFlatIP(dimension)
-
 index.add(embeddings)
 
-print("FAISS listo")
-print("Personas registradas:", len(labels))
+print(f"FAISS listo — {len(labels)} persona(s) registrada(s)")
+
+# ============================================
+# MÉTRICAS EN MEMORIA (para el endpoint)
+# ============================================
+
+metrics = {
+    "total_ok":   0,
+    "total_deny": 0,
+    "registered": len(labels)
+}
 
 # ============================================
 # WEBCAM
 # ============================================
 
 camera = cv2.VideoCapture(0)
-
-# BAJAR RESOLUCIÓN PARA MENOS LAG
-camera.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+camera.set(cv2.CAP_PROP_FRAME_WIDTH,  640)
 camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
-face_data = {
-    "detected": False
-}
+face_data = {"detected": False}
+
+# último acceso registrado para no duplicar en BD
+_last_logged = {"name": None, "ts": 0}
 
 # ============================================
 # VIDEO STREAM
@@ -114,206 +123,149 @@ def generate_frames():
             break
 
         frame_count += 1
-
-        # espejo
         frame = cv2.flip(frame, 1)
 
-        # ============================================
-        # SOLO ANALIZAR CADA 15 FRAMES
-        # ============================================
-
+        # Analizar cada 15 frames
         if frame_count % 15 == 0:
 
             try:
 
                 objs = DeepFace.represent(
-                    img_path=frame,
-                    model_name="ArcFace",
-                    detector_backend="opencv",
-                    enforce_detection=False
+                    img_path          = frame,
+                    model_name        = "ArcFace",
+                    detector_backend  = "opencv",
+                    enforce_detection = False
                 )
 
-                # ============================================
-                # NO HAY ROSTRO
-                # ============================================
+                if not objs:
 
-                if len(objs) == 0:
-
-                    face_data = {
-                        "detected": False
-                    }
+                    face_data = {"detected": False}
 
                 else:
 
-                    obj = objs[0]
+                    obj          = objs[0]
+                    embedding    = obj["embedding"]
+                    facial_area  = obj["facial_area"]
 
-                    embedding = obj["embedding"]
+                    x = facial_area["x"];  y = facial_area["y"]
+                    w = facial_area["w"];  h = facial_area["h"]
 
-                    facial_area = obj["facial_area"]
+                    vec = np.array([embedding]).astype("float32")
+                    faiss.normalize_L2(vec)
 
-                    x = facial_area["x"]
-                    y = facial_area["y"]
-                    w = facial_area["w"]
-                    h = facial_area["h"]
-
-                    embedding = np.array([embedding]).astype("float32")
-
-                    # NORMALIZAR
-                    faiss.normalize_L2(embedding)
-
-                    # ============================================
-                    # BUSCAR EN FAISS
-                    # ============================================
-
-                    D, I = index.search(embedding, 1)
-
+                    D, I = index.search(vec, 1)
                     similarity = float(D[0][0])
-
-                    print("SIMILITUD:", similarity)
-                    print("PERSONA:", labels[I[0][0]])
-
                     confidence = round(similarity * 100, 2)
 
-                    # ============================================
-                    # RECONOCIDO
-                    # ============================================
+                    print(f"Similitud: {similarity:.4f}  |  Persona: {labels[I[0][0]]}")
 
+                    # ── RECONOCIDO ────────────────────────────────────────
                     if similarity > THRESHOLD:
 
                         name = labels[I[0][0]]
 
                         cursor.execute(
-                            "SELECT nombre, codigo, rol, programa FROM usuarios WHERE archivo LIKE ?",
+                            "SELECT nombre, codigo, rol, programa "
+                            "FROM usuarios WHERE archivo LIKE ?",
                             (f"{name}%",)
                         )
-
                         user = cursor.fetchone()
 
                         if user:
-
-                            nombre_real = user[0]
-                            codigo = user[1]
-                            rol = user[2]
-                            programa = user[3]
-
+                            nombre_real, codigo, rol, programa = user
                         else:
-
                             nombre_real = name
-                            codigo = "N/A"
-                            rol = "N/A"
-                            programa = "N/A"
+                            codigo = rol = programa = "N/A"
 
                         face_data = {
-                            "detected": True,
-                            "approved": True,
-                            "name": nombre_real,
-                            "codigo": codigo,
-                            "rol": rol,
-                            "programa": programa,
+                            "detected":  True,
+                            "approved":  True,
+                            "name":      nombre_real,
+                            "codigo":    codigo,
+                            "rol":       rol,
+                            "programa":  programa,
                             "confidence": confidence,
-                            "x": int(x),
-                            "y": int(y),
-                            "w": int(w),
-                            "h": int(h)
+                            "x": int(x), "y": int(y),
+                            "w": int(w), "h": int(h)
                         }
 
-                    # ============================================
-                    # DESCONOCIDO
-                    # ============================================
+                        _log_access(nombre_real, codigo, "aprobado", confidence)
 
+                    # ── DESCONOCIDO ───────────────────────────────────────
                     else:
-
-                        # SOLO DENEGAR SI REALMENTE HAY UNA CARA
 
                         if similarity > 0.15:
 
                             face_data = {
-                                "detected": True,
-                                "approved": False,
-                                "name": "Desconocido",
-                                "codigo": "N/A",
-                                "rol": "No registrado",
-                                "programa": "Acceso denegado",
+                                "detected":  True,
+                                "approved":  False,
+                                "name":      "Desconocido",
+                                "codigo":    "N/A",
+                                "rol":       "No registrado",
+                                "programa":  "Acceso denegado",
                                 "confidence": confidence,
-                                "x": int(x),
-                                "y": int(y),
-                                "w": int(w),
-                                "h": int(h)
+                                "x": int(x), "y": int(y),
+                                "w": int(w), "h": int(h)
                             }
+
+                            _log_access("Desconocido", "N/A", "denegado", confidence)
 
                         else:
 
-                            # probablemente no hay rostro
-                            face_data = {
-                                "detected": False
-                            }
+                            face_data = {"detected": False}
 
             except Exception as e:
                 print("Error:", e)
 
-        # ============================================
-        # DIBUJAR RESULTADO
-        # ============================================
+        # ── Dibujar resultado ─────────────────────────────────────────────
+        if face_data.get("detected"):
 
-        if face_data["detected"]:
+            x = face_data["x"];  y = face_data["y"]
+            w = face_data["w"];  h = face_data["h"]
+            color = (0, 255, 0) if face_data["approved"] else (0, 0, 255)
 
-            x = face_data["x"]
-            y = face_data["y"]
-            w = face_data["w"]
-            h = face_data["h"]
-
-            # ============================================
-            # COLOR
-            # ============================================
-
-            if face_data["approved"]:
-
-                color = (0, 255, 0)
-
-            else:
-
-                color = (0, 0, 255)
-
-            # ============================================
-            # RECTÁNGULO
-            # ============================================
-
-            cv2.rectangle(
-                frame,
-                (x, y),
-                (x + w, y + h),
-                color,
-                2
-            )
-
-            # ============================================
-            # TEXTO
-            # ============================================
-
+            cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
             cv2.putText(
-                frame,
-                f'{face_data["name"]}',
+                frame, face_data["name"],
                 (x, y - 10),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.7,
-                color,
-                2
+                cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2
             )
-
-        # ============================================
-        # ENVIAR FRAME
-        # ============================================
 
         ret, buffer = cv2.imencode(".jpg", frame)
-
-        frame = buffer.tobytes()
-
         yield (
             b"--frame\r\n"
             b"Content-Type: image/jpeg\r\n\r\n" +
-            frame +
+            buffer.tobytes() +
             b"\r\n"
         )
+
+# ============================================
+# HELPER: registrar acceso sin duplicar
+# ============================================
+
+def _log_access(nombre, codigo, resultado, confianza):
+    """Guarda el acceso en la BD y actualiza métricas.
+    Evita duplicados: no registra el mismo nombre si pasaron < 5 s."""
+
+    now = datetime.now().timestamp()
+
+    if _last_logged["name"] == nombre and (now - _last_logged["ts"]) < 5:
+        return
+
+    _last_logged["name"] = nombre
+    _last_logged["ts"]   = now
+
+    cursor.execute(
+        "INSERT INTO accesos (nombre, codigo, resultado, confianza) "
+        "VALUES (?, ?, ?, ?)",
+        (nombre, codigo, resultado, confianza)
+    )
+    conn.commit()
+
+    if resultado == "aprobado":
+        metrics["total_ok"]   += 1
+    else:
+        metrics["total_deny"] += 1
 
 # ============================================
 # ROUTES
@@ -333,6 +285,39 @@ def video():
 @app.route("/face_data")
 def get_face_data():
     return jsonify(face_data)
+
+@app.route("/metrics")
+def get_metrics():
+    """Devuelve contadores globales + historial de hoy."""
+
+    today = datetime.now().strftime("%Y-%m-%d")
+
+    cursor.execute(
+        "SELECT nombre, codigo, resultado, confianza, timestamp "
+        "FROM accesos "
+        "WHERE DATE(timestamp) = ? "
+        "ORDER BY timestamp DESC LIMIT 50",
+        (today,)
+    )
+
+    rows = cursor.fetchall()
+    history = [
+        {
+            "nombre":    r[0],
+            "codigo":    r[1],
+            "resultado": r[2],
+            "confianza": r[3],
+            "timestamp": r[4]
+        }
+        for r in rows
+    ]
+
+    return jsonify({
+        "registered": metrics["registered"],
+        "total_ok":   metrics["total_ok"],
+        "total_deny": metrics["total_deny"],
+        "history":    history
+    })
 
 # ============================================
 # RUN

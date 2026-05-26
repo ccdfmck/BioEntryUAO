@@ -5,5 +5,12 @@
     "correo": "admin@uao.edu.co",
     "rol": "Administrador",
     "password": "scrypt:32768:8:1$xGlYQHjGqWRvSBAO$59b6fc8da020b6f362a8a25c2c3f6a3cda043213ac6e97578838fbe5e1f23cf4506094624ad3413b42b44ba2e2c2c37a382f53a73888dca4b4c4561cdfcd14d6"
+  },
+  {
+    "nombre": "juan silva",
+    "usuario": "juanda",
+    "correo": "Juan_david.silva@uao.edu.co",
+    "rol": "Administrador",
+    "password": "scrypt:32768:8:1$HYSbzL9kPo9y0Bxa$0e1534d94afa17b2276ec49021bce197c702e216f323b1a560e4937d9f03202bae80e8f50c2e05c8f416c62aeee0db3d8fb982708abc06e7e548b9e870a1d155"
   }
 ]

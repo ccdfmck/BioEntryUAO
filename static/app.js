@@ -3,46 +3,39 @@
 // ===============================
 
 const state = {
-  okCount: 0,
-  denyCount: 0,
-  recentList: []
+  okCount:    0,
+  denyCount:  0,
+  recentList: [],
+  lastPerson: null,
+  adminAuth:  false
 };
 
-const THRESHOLD = 75;
+const THRESHOLD = 60;
 
 // ===============================
 // RELOJ
 // ===============================
 
 function updateClock() {
+  const now    = new Date();
+  const days   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['January','February','March','April','May','June',
+                  'July','August','September','October','November','December'];
 
-  const now = new Date();
+  let h    = now.getHours();
+  const ap = h >= 12 ? 'PM' : 'AM';
 
-  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  h        = h % 12 || 12;
 
-  const months = ['January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'];
-
-  let h = now.getHours();
-
-  const ampm = h >= 12 ? 'PM' : 'AM';
-
-  h = h % 12 || 12;
-
-  const mm = String(now.getMinutes()).padStart(2, '0');
-  const ss = String(now.getSeconds()).padStart(2, '0');
+  const mm = String(now.getMinutes()).padStart(2,'0');
+  const ss = String(now.getSeconds()).padStart(2,'0');
 
   document.getElementById('cam-clock').innerHTML =
-    `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}<br>${h}:${mm}:${ss} ${ampm}`;
+    `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}<br>${h}:${mm}:${ss} ${ap}`;
 }
 
 updateClock();
-
 setInterval(updateClock, 1000);
-
-// ===============================
-// HORA
-// ===============================
 
 function nowTime() {
 
@@ -50,11 +43,11 @@ function nowTime() {
 
   let h = now.getHours();
 
-  const ampm = h >= 12 ? 'PM' : 'AM';
+  const ap = h >= 12 ? 'PM' : 'AM';
 
   h = h % 12 || 12;
 
-  return `${h}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')} ${ampm}`;
+  return `${h}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')} ${ap}`;
 }
 
 // ===============================
@@ -63,8 +56,7 @@ function nowTime() {
 
 function setAccuracy(pct, approved) {
 
-  const val = document.getElementById('acc-val');
-
+  const val  = document.getElementById('acc-val');
   const fill = document.getElementById('acc-fill');
 
   val.textContent = pct + '%';
@@ -103,17 +95,24 @@ function resetPanel() {
 
   st.className = 'status-tag waiting';
 
-  document.getElementById('acc-val').textContent = '--%';
+  const accVal  = document.getElementById('acc-val');
+  const accFill = document.getElementById('acc-fill');
 
-  document.getElementById('acc-val').className = 'acc-value waiting';
+  accVal.textContent = '--%';
 
-  document.getElementById('acc-fill').style.width = '0%';
+  accVal.className = 'acc-value waiting';
 
-  document.getElementById('acc-fill').style.background = '#ddd';
+  accFill.style.width = '0%';
 
-  document.getElementById('bb-overlay').classList.add('hidden');
+  accFill.style.background = '#555';
 
-  document.getElementById('no-face-msg').classList.remove('hidden');
+  document.getElementById('bb-overlay')
+    .classList.add('hidden');
+
+  document.getElementById('no-face-msg')
+    .classList.remove('hidden');
+
+  state.lastPerson = null;
 }
 
 // ===============================
@@ -143,50 +142,104 @@ function showFlash(approved) {
 // RECIENTES
 // ===============================
 
-function addRecent(person, approved, pct) {
+function renderRecent(list) {
 
-  state.recentList.unshift({
-    person,
-    approved,
-    pct
-  });
+  if (!list || list.length === 0) {
 
-  if (state.recentList.length > 6) {
-    state.recentList.pop();
+    document.getElementById('recent-list').innerHTML =
+      '<div style="font-size:11.5px;color:#bbb;padding:6px 0;font-style:italic;">Sin registros aún...</div>';
+
+    return;
   }
 
-  document.getElementById('recent-list').innerHTML =
-    state.recentList.map(r => `
+  document.getElementById('recent-list').innerHTML = list.map(r => {
+
+    const initials = r.nombre
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .substring(0,2)
+      .toUpperCase();
+
+    const approved = r.resultado === 'aprobado';
+
+    const pct = Math.round(r.confianza);
+
+    const ts = new Date(r.timestamp);
+
+    let h = ts.getHours();
+
+    const ap = h >= 12 ? 'PM' : 'AM';
+
+    h = h % 12 || 12;
+
+    const hms =
+      `${h}:${String(ts.getMinutes()).padStart(2,'0')} ${ap}`;
+
+    return `
       <div class="recent-item">
 
         <div class="ri-left">
 
-          <div class="ri-avatar">
-            ${r.person.initials}
-          </div>
+          <div class="ri-avatar">${initials}</div>
 
           <div>
-            <div class="ri-name">
-              ${r.person.name}
-            </div>
-
-            <div class="ri-role">
-              ${r.pct}% confianza
-            </div>
+            <div class="ri-name">${r.nombre}</div>
+            <div class="ri-role">${pct}% · ${hms}</div>
           </div>
 
         </div>
 
-        <span class="ri-badge ${r.approved ? 'ok' : 'deny'}">
-          ${r.approved ? 'Aprobado' : 'Denegado'}
+        <span class="ri-badge ${approved ? 'ok' : 'deny'}">
+          ${approved ? 'Aprobado' : 'Denegado'}
         </span>
 
       </div>
-    `).join('');
+    `;
+  }).join('');
 }
 
 // ===============================
-// CONSULTAR FLASK
+// POLL METRICS
+// ===============================
+
+let lastHistorySignature = '';
+
+async function pollMetrics() {
+
+  try {
+
+    const res = await fetch('/metrics');
+
+    const data = await res.json();
+
+    document.getElementById('stat-registered').textContent =
+      data.registered;
+
+    document.getElementById('stat-ok').textContent =
+      data.total_ok;
+
+    document.getElementById('stat-deny').textContent =
+      data.total_deny;
+
+    const signature =
+      data.history.map(r => r.timestamp + r.nombre).join('|');
+
+    if (signature !== lastHistorySignature) {
+
+      lastHistorySignature = signature;
+
+      renderRecent(data.history);
+    }
+
+  } catch(e) {
+
+    console.error('metrics:', e);
+  }
+}
+
+// ===============================
+// POLL FACE DATA
 // ===============================
 
 async function pollRecognition() {
@@ -198,7 +251,9 @@ async function pollRecognition() {
     const data = await response.json();
 
     if (!data.detected) {
+
       resetPanel();
+
       return;
     }
 
@@ -213,7 +268,7 @@ async function pollRecognition() {
         .split(' ')
         .map(n => n[0])
         .join('')
-        .substring(0, 2),
+        .substring(0,2),
 
       role: data.rol,
       code: data.codigo,
@@ -222,9 +277,7 @@ async function pollRecognition() {
 
     const pct = parseInt(data.confidence);
 
-    const approved = pct >= THRESHOLD;
-
-    // PERFIL
+    const approved = data.approved;
 
     document.getElementById('avatar').textContent =
       person.initials;
@@ -244,8 +297,6 @@ async function pollRecognition() {
     document.getElementById('a-time').textContent =
       nowTime();
 
-    // STATUS
-
     const st = document.getElementById('a-status');
 
     st.textContent =
@@ -254,84 +305,34 @@ async function pollRecognition() {
     st.className =
       'status-tag ' + (approved ? 'ok' : 'deny');
 
-    // ACCURACY
-
     setAccuracy(pct, approved);
 
-    // BOUNDING BOX REAL
+    // =========================================
+    // OCULTAR BOUNDING BOX HTML
+    // =========================================
 
-    const overlay = document.getElementById('bb-overlay');
+    document.getElementById('bb-overlay')
+      .classList.add('hidden');
 
-    const bbox = document.getElementById('bbox');
+    if (state.lastPerson !== person.name) {
 
-    const bbLabel = document.getElementById('bb-label');
+      showFlash(approved);
 
-    const bbConf = document.getElementById('bb-conf');
-
-    overlay.classList.remove('hidden');
-
-    bbox.style.top = data.y + 'px';
-
-    bbox.style.left = data.x + 'px';
-
-    bbox.style.width = data.w + 'px';
-
-    bbox.style.height = data.h + 'px';
-
-    bbox.className =
-      'bounding-box animating' +
-      (approved ? '' : ' deny-box');
-
-    bbLabel.textContent = person.name;
-
-    bbLabel.className =
-      'bb-label' +
-      (approved ? '' : ' deny-label');
-
-    bbConf.textContent =
-      'confianza: ' + pct + '%';
-
-    bbConf.className =
-      'bb-conf' +
-      (approved ? '' : ' deny-conf');
-
-    // FLASH
-
-    showFlash(approved);
-
-    // CONTADORES
-
-    if (approved) {
-
-      state.okCount++;
-
-      document.getElementById('stat-ok').textContent =
-        state.okCount;
-
-    } else {
-
-      state.denyCount++;
-
-      document.getElementById('stat-deny').textContent =
-        state.denyCount;
+      state.lastPerson = person.name;
     }
 
-    // RECIENTES
+  } catch(e) {
 
-    addRecent(person, approved, pct);
-
-  } catch (err) {
-
-    console.error(err);
+    console.error(e);
   }
 }
 
 // ===============================
-// LOOP
+// LOOP PRINCIPAL
 // ===============================
 
 resetPanel();
 
-setInterval(() => {
-  pollRecognition();
-}, 1000);
+setInterval(pollRecognition, 1000);
+
+setInterval(pollMetrics, 3000);

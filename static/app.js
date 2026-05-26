@@ -1,7 +1,3 @@
-// ===============================
-// BIOENTRY REALTIME FRONTEND
-// ===============================
-
 const state = {
   okCount:    0,
   denyCount:  0,
@@ -12,10 +8,7 @@ const state = {
 
 const THRESHOLD = 60;
 
-// ===============================
-// RELOJ
-// ===============================
-
+//reloj
 function updateClock() {
   const now    = new Date();
   const days   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -41,10 +34,7 @@ function nowTime() {
   return `${h}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')} ${ap}`;
 }
 
-// ===============================
-// ACCURACY BAR
-// ===============================
-
+//accuracy bar
 function setAccuracy(pct, approved) {
   const val  = document.getElementById('acc-val');
   const fill = document.getElementById('acc-fill');
@@ -56,10 +46,7 @@ function setAccuracy(pct, approved) {
     : 'linear-gradient(90deg, #922b21, #c0392b)';
 }
 
-// ===============================
-// RESET PANEL
-// ===============================
-
+//panel reset
 function resetPanel() {
   document.getElementById('p-name').textContent    = 'Esperando identificación...';
   document.getElementById('p-role').textContent    = '—';
@@ -81,10 +68,7 @@ function resetPanel() {
   state.lastPerson = null;
 }
 
-// ===============================
-// FLASH
-// ===============================
-
+//flash
 function showFlash(approved) {
   const flash = document.getElementById('flash');
   const label = document.getElementById('flash-label');
@@ -94,10 +78,7 @@ function showFlash(approved) {
   setTimeout(() => flash.classList.remove('show'), 1400);
 }
 
-// ===============================
-// RECIENTES
-// ===============================
-
+//lista recientes
 function renderRecent(list) {
   if (!list || list.length === 0) {
     document.getElementById('recent-list').innerHTML =
@@ -127,11 +108,9 @@ function renderRecent(list) {
   }).join('');
 }
 
-// ===============================
-// POLL METRICS
-// ===============================
+//metricas poll
 
-let lastHistorySignature = ''; // FIX: firma para detectar cambios en la lista
+let lastHistorySignature = ''; 
 
 async function pollMetrics() {
   try {
@@ -141,7 +120,7 @@ async function pollMetrics() {
     document.getElementById('stat-ok').textContent         = data.total_ok;
     document.getElementById('stat-deny').textContent       = data.total_deny;
 
-    // FIX: solo re-renderiza si la lista cambió
+    //solo renderiza si la lista cambió
     const signature = data.history.map(r => r.timestamp + r.nombre).join('|');
     if (signature !== lastHistorySignature) {
       lastHistorySignature = signature;
@@ -150,10 +129,7 @@ async function pollMetrics() {
   } catch(e) { console.error('metrics:', e); }
 }
 
-// ===============================
-// POLL FACE DATA
-// ===============================
-
+//poll face data
 async function pollRecognition() {
   try {
     const response = await fetch('/face_data');
@@ -207,18 +183,12 @@ async function pollRecognition() {
   } catch(e) { console.error(e); }
 }
 
-// ===============================
-// LOOP PRINCIPAL
-// ===============================
-
+//loop principal
 resetPanel();
 setInterval(pollRecognition, 1000);
 setInterval(pollMetrics,     3000);
 
-// ═══════════════════════════════════════════════════════════
-//  ADMIN — LOGIN
-// ═══════════════════════════════════════════════════════════
-
+//login del admin
 const btnAdmin    = document.getElementById('btn-admin');
 const modalLogin  = document.getElementById('modal-login');
 const loginClose  = document.getElementById('login-close');
@@ -276,9 +246,7 @@ loginSubmit.addEventListener('click', async () => {
   }
 });
 
-// ═══════════════════════════════════════════════════════════
-//  ADMIN — PANEL
-// ═══════════════════════════════════════════════════════════
+//panel admin
 
 const modalAdmin  = document.getElementById('modal-admin');
 const adminClose  = document.getElementById('admin-close');
@@ -294,7 +262,7 @@ function closeAdmin() { modalAdmin.classList.add('hidden'); }
 
 adminClose.addEventListener('click', closeAdmin);
 
-// Tabs
+//Tabs
 adminTabs.forEach(tab => {
   tab.addEventListener('click', () => switchTab(tab.dataset.tab));
 });
@@ -305,8 +273,7 @@ function switchTab(name) {
   if (name === 'lista') loadUserList();
 }
 
-// ── Foto upload ──────────────────────────────────────────
-
+//para subir la foto
 const photoDrop    = document.getElementById('photo-drop');
 const fotoInput    = document.getElementById('foto-input');
 const photoPreview = document.getElementById('photo-preview');
@@ -341,8 +308,7 @@ function setPhoto(file) {
   photoPlaceholder.classList.add('hidden');
 }
 
-// ── Guardar usuario ──────────────────────────────────────
-
+//guardar nuevo usuario
 const agregarSubmit = document.getElementById('agregar-submit');
 const agregarReset  = document.getElementById('agregar-reset');
 const agregarError  = document.getElementById('agregar-error');
@@ -381,7 +347,7 @@ agregarSubmit.addEventListener('click', async () => {
     return;
   }
 
-  // Loading
+  //loading
   agregarSubmit.disabled = true;
   agregarBtnTxt.textContent = 'Guardando...';
   agregarSpinner.classList.remove('hidden');
@@ -400,7 +366,7 @@ agregarSubmit.addEventListener('click', async () => {
     if (res.ok) {
       agregarOk.classList.remove('hidden');
       resetForm();
-      pollMetrics(); // actualizar contador
+      pollMetrics(); //actualizar contador
     } else {
       agregarError.textContent = data.error || 'Error al guardar.';
       agregarError.classList.remove('hidden');
@@ -415,8 +381,7 @@ agregarSubmit.addEventListener('click', async () => {
   }
 });
 
-// ── Lista de usuarios ────────────────────────────────────
-
+//lista de usuarios
 async function loadUserList() {
   const list = document.getElementById('user-list');
   list.innerHTML = '<div class="list-loading">Cargando...</div>';

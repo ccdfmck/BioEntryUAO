@@ -134,7 +134,7 @@ aside {
   margin-bottom: 8px;
 }
 
-/* Perfil */
+/*Perfil*/
 .profile-block {
   display: flex;
   gap: 11px;
@@ -183,7 +183,7 @@ aside {
   transition: all 0.3s;
 }
 
-/* Datos Ingreso */
+/*Datos Ingreso*/
 .access-card {
   background: #fff;
   border: 1px solid var(--ink);
@@ -224,7 +224,7 @@ aside {
 .status-tag.deny    { background: var(--deny-bg);  color: var(--deny); }
 .status-tag.waiting { background: #f0f0f0;          color: #999;        }
 
-/* Accuracy */
+/*Accuracy*/
 .accuracy-bar-wrap {
   background: #fff;
   border: 1px solid var(--border);
@@ -278,7 +278,7 @@ aside {
   margin-top: 5px;
 }
 
-/* Estadísticas */
+/*Estadísticas*/
 .stats-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -309,7 +309,7 @@ aside {
   transition: all 0.3s;
 }
 
-/* Recientes */
+/*lista de recientes*/
 .recent-list { display: flex; flex-direction: column; }
 
 .recent-item {
@@ -408,7 +408,7 @@ aside {
   background: #111;
 }
 
-/* Fondo simulado */
+/*Fondo simulado*/
 .cam-bg {
   position: absolute;
   inset: 0;
@@ -443,7 +443,7 @@ aside {
 
 .cam-no-face.hidden { opacity: 0; }
 
-/* Bounding box */
+/*Bounding box*/
 .bb-overlay {
   position: absolute;
   inset: 0;
@@ -519,7 +519,7 @@ aside {
 
 .bb-conf.deny-conf { color: #ff4444; }
 
-/* Flash resultado */
+/*Flash resultado*/
 .status-flash {
   position: absolute;
   inset: 0;
@@ -548,7 +548,7 @@ aside {
 .ok-flash   .flash-label { color: #00e676; border: 2px solid rgba(0,   230, 118, 0.4); background: rgba(0,  20,  10, 0.5); }
 .deny-flash .flash-label { color: #ff4444; border: 2px solid rgba(255,  68,  68, 0.4); background: rgba(20,  0,   0, 0.5); }
 
-/* Toolbar inferior */
+/*Toolbar inferior*/
 .cam-toolbar {
   padding: 10px 16px;
   background: rgba(0, 0, 0, 0.65);
@@ -566,7 +566,7 @@ aside {
   color: rgba(255, 255, 255, 0.28);
 }
 
-/* Indicador "Analizando" */
+/*Indicador de "analizando"*/
 .searching-indicator {
   position: absolute;
   top: 12px;
@@ -620,9 +620,7 @@ aside {
 
 
 
-/* ══════════════════════════════════════════════
-   BOTÓN ADMIN (header)
-══════════════════════════════════════════════ */
+/*Botón Admin del header*/
 .btn-admin {
   display: flex;
   align-items: center;
@@ -640,9 +638,7 @@ aside {
 }
 .btn-admin:hover { background: rgba(255,255,255,0.24); }
 
-/* ══════════════════════════════════════════════
-   MODAL BASE
-══════════════════════════════════════════════ */
+/*base modal*/
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -762,9 +758,7 @@ aside {
 
 .modal-error.hidden, .modal-success.hidden { display: none; }
 
-/* ══════════════════════════════════════════════
-   BOTONES
-══════════════════════════════════════════════ */
+/*botones*/
 .btn-primary {
   display: flex; align-items: center; gap: 7px;
   background: var(--cr);
@@ -803,9 +797,7 @@ aside {
 }
 .btn-spinner.hidden { display: none; }
 
-/* ══════════════════════════════════════════════
-   CAMPOS
-══════════════════════════════════════════════ */
+/*campos*/
 .field-group {
   margin-bottom: 14px;
 }
@@ -842,9 +834,7 @@ aside {
   gap: 0 16px;
 }
 
-/* ══════════════════════════════════════════════
-   FOTO UPLOAD
-══════════════════════════════════════════════ */
+/*subir foto*/
 .photo-upload-area {
   border: 2px dashed var(--border);
   border-radius: 10px;
@@ -888,9 +878,7 @@ aside {
 }
 .photo-preview.hidden { display: none; }
 
-/* ══════════════════════════════════════════════
-   TABS
-══════════════════════════════════════════════ */
+/*tabs*/
 .admin-tabs {
   display: flex;
   border-bottom: 1px solid var(--border);
@@ -917,9 +905,7 @@ aside {
 
 .tab-content.hidden { display: none; }
 
-/* ══════════════════════════════════════════════
-   LISTA DE USUARIOS
-══════════════════════════════════════════════ */
+/*usuarios lista*/
 .user-list {
   display: flex;
   flex-direction: column;

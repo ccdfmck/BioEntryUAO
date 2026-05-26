@@ -10,10 +10,7 @@ import shutil
 
 app = Flask(__name__)
 
-# ============================================
-# SQLITE
-# ============================================
-
+#SQLITE
 conn = sqlite3.connect("usuarios.db", check_same_thread=False)
 cursor = conn.cursor()
 
@@ -29,17 +26,11 @@ CREATE TABLE IF NOT EXISTS accesos (
 """)
 conn.commit()
 
-# ============================================
-# CONFIG
-# ============================================
-
+#Config
 DB_PATH   = "database"
 THRESHOLD = 0.6
 
-# ============================================
-# ESTADO GLOBAL DE EMBEDDINGS
-# ============================================
-
+#Estado global de los embeddings
 embeddings_store = {
     "embeddings": None,
     "labels":     [],
@@ -93,19 +84,13 @@ def load_embeddings():
 
 load_embeddings()
 
-# ============================================
-# MÉTRICAS
-# ============================================
-
+#Métricas
 metrics = {
     "total_ok":   0,
     "total_deny": 0
 }
 
-# ============================================
-# WEBCAM
-# ============================================
-
+#Cámara
 camera = cv2.VideoCapture(0)
 camera.set(cv2.CAP_PROP_FRAME_WIDTH,  640)
 camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
@@ -113,10 +98,7 @@ camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 face_data     = {"detected": False}
 _last_logged  = {"name": None, "ts": 0}
 
-# ============================================
-# VIDEO STREAM
-# ============================================
-
+#Video stream
 def generate_frames():
     global face_data
     frame_count = 0
@@ -213,10 +195,7 @@ def generate_frames():
         yield (b"--frame\r\nContent-Type: image/jpeg\r\n\r\n" +
                buffer.tobytes() + b"\r\n")
 
-# ============================================
-# HELPER: log acceso
-# ============================================
-
+#Helper log de acceso
 def _log_access(nombre, codigo, resultado, confianza):
     now = datetime.now().timestamp()
     if _last_logged["name"] == nombre and (now - _last_logged["ts"]) < 5:
@@ -233,10 +212,7 @@ def _log_access(nombre, codigo, resultado, confianza):
     else:
         metrics["total_deny"] += 1
 
-# ============================================
-# ROUTES — vistas
-# ============================================
-
+#Rutas - vistas
 @app.route("/")
 def home():
     return render_template("index.html")
@@ -252,14 +228,13 @@ def get_face_data():
 
 @app.route("/metrics")
 def get_metrics():
-    # FIX: leer contadores directo de BD (no dependen de RAM ni reinicios)
+    #lee contadores directo de BD
     cursor.execute("SELECT COUNT(*) FROM accesos WHERE resultado='aprobado'")
     total_ok = cursor.fetchone()[0]
 
     cursor.execute("SELECT COUNT(*) FROM accesos WHERE resultado='denegado'")
     total_deny = cursor.fetchone()[0]
 
-    # FIX: ORDER BY id DESC elimina el problema de zona horaria UTC vs Colombia
     cursor.execute(
         "SELECT nombre, codigo, resultado, confianza, timestamp "
         "FROM accesos "
@@ -284,10 +259,7 @@ def get_metrics():
         "history":    history
     })
 
-# ============================================
-# ROUTES — admin
-# ============================================
-
+#Rutas - Admin
 ADMIN_PASSWORD = "uao2026"
 
 @app.route("/admin/login", methods=["POST"])
@@ -362,9 +334,6 @@ def admin_eliminar(uid):
     return jsonify({"ok": True})
 
 
-# ============================================
-# RUN
-# ============================================
-
+#run
 if __name__ == "__main__":
     app.run(debug=True)

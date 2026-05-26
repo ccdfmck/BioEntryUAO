@@ -1,37 +1,12 @@
-"""
-evaluar_modelo.py
-=================
-Calcula métricas de desempeño del sistema BioEntry
-a partir de la base de datos de accesos (usuarios.db).
-
-Cómo usarlo
------------
-1. Corre el sistema un rato con personas conocidas y desconocidas.
-2. Luego ejecuta:  python evaluar_modelo.py
-
-Métricas que genera
--------------------
-- Accuracy, Precision, Recall, F1-score
-- Matriz de confusión
-- Distribución de confianza (aprobados vs denegados)
-- Reporte completo por persona
-"""
-
 import sqlite3
 import numpy as np
 from datetime import datetime
 
-# ============================================
-# CONEXIÓN
-# ============================================
-
+#conectar
 conn   = sqlite3.connect("usuarios.db")
 cursor = conn.cursor()
 
-# ============================================
-# OBTENER ACCESOS
-# ============================================
-
+#obtener accesos
 cursor.execute("""
     SELECT nombre, resultado, confianza, timestamp
     FROM accesos
@@ -51,21 +26,15 @@ print(f"  BioEntry — Evaluación del Modelo")
 print(f"  {datetime.now().strftime('%Y-%m-%d  %H:%M:%S')}")
 print(f"{'═'*55}\n")
 
-# ============================================
-# SEPARAR DATOS
-# ============================================
-
+#separar los datos
 nombres    = [r[0] for r in rows]
-resultados = [r[1] for r in rows]   # 'aprobado' | 'denegado'
+resultados = [r[1] for r in rows]
 confianzas = [r[2] for r in rows]
 
-# Para métricas: 1 = aprobado, 0 = denegado
+#para métricas: 1=aprobado, 0=denegado
 y_pred = [1 if r == 'aprobado' else 0 for r in resultados]
 
-# ============================================
-# ESTADÍSTICAS BÁSICAS
-# ============================================
-
+#estadísticas basic
 total       = len(rows)
 n_aprobados = y_pred.count(1)
 n_denegados = y_pred.count(0)
@@ -74,10 +43,7 @@ print(f"  Total de accesos registrados : {total}")
 print(f"  Aprobados                    : {n_aprobados}")
 print(f"  Denegados                    : {n_denegados}\n")
 
-# ============================================
-# CONFIANZA PROMEDIO
-# ============================================
-
+#confianza promedio
 conf_arr = np.array(confianzas)
 conf_ok  = conf_arr[[i for i,r in enumerate(resultados) if r == 'aprobado']]
 conf_no  = conf_arr[[i for i,r in enumerate(resultados) if r == 'denegado']]
@@ -86,10 +52,7 @@ print(f"  Confianza promedio — Aprobados : {conf_ok.mean():.1f}%  (σ={conf_ok
 if len(conf_no):
     print(f"  Confianza promedio — Denegados : {conf_no.mean():.1f}%  (σ={conf_no.std():.1f})")
 
-# ============================================
-# MÉTRICAS POR PERSONA
-# ============================================
-
+#métricas por persona
 print(f"\n  {'─'*50}")
 print(f"  Detalle por persona\n")
 
@@ -109,19 +72,15 @@ for persona in personas:
     print(f"    Confianza μ : {conf_p:.1f}%")
     print()
 
-# ============================================
-# ESTIMACIÓN DE ACCURACY
-# (asumiendo que 'Desconocido' = denegado correcto
-#  y personas registradas = aprobado correcto)
-# ============================================
 
+#estimación de accuracy
 cursor.execute("SELECT COUNT(*) FROM usuarios")
 n_registrados = cursor.fetchone()[0]
 
-# Verdaderos positivos: persona registrada aprobada
-# Verdaderos negativos: 'Desconocido' denegado
-# Falsos positivos: 'Desconocido' aprobado (raro pero posible)
-# Falsos negativos: persona registrada denegada
+#Verdaderos positivos: persona registrada aprobada
+#Verdaderos negativos: "Desconocido" denegado
+#Falsos positivos: "Desconocido" aprobado
+#Falsos negativos: persona registrada denegada
 
 vp = sum(1 for n,r in zip(nombres,resultados) if n != 'Desconocido' and r == 'aprobado')
 vn = sum(1 for n,r in zip(nombres,resultados) if n == 'Desconocido' and r == 'denegado')

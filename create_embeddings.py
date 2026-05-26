@@ -9,14 +9,11 @@ from datetime import datetime
 
 app = Flask(__name__)
 
-# ============================================
-# SQLITE — usuarios + accesos
-# ============================================
-
+#SQLITE usuarios e ingresos
 conn = sqlite3.connect("usuarios.db", check_same_thread=False)
 cursor = conn.cursor()
 
-# Crear tabla de accesos si no existe
+#Crear tabla de accesos si no existe
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS accesos (
     id        INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -29,17 +26,11 @@ CREATE TABLE IF NOT EXISTS accesos (
 """)
 conn.commit()
 
-# ============================================
-# CONFIG
-# ============================================
-
+#config
 DB_PATH   = "database"
-THRESHOLD = 0.6          # menor = más estricto
+THRESHOLD = 0.6
 
-# ============================================
-# CARGAR EMBEDDINGS
-# ============================================
-
+#carga de los embeddings
 embeddings = []
 labels     = []
 
@@ -57,7 +48,7 @@ for file in os.listdir(DB_PATH):
         objs = DeepFace.represent(
             img_path          = path,
             model_name        = "ArcFace",
-            detector_backend  = "retinaface",   # ← igual que al construir la BD
+            detector_backend  = "retinaface",
             enforce_detection = False
         )
 
@@ -73,42 +64,30 @@ embeddings = np.array(embeddings).astype("float32")
 faiss.normalize_L2(embeddings)
 dimension  = embeddings.shape[1]
 
-# ============================================
-# FAISS
-# ============================================
-
+#fAISS
 index = faiss.IndexFlatIP(dimension)
 index.add(embeddings)
 
 print(f"FAISS listo — {len(labels)} persona(s) registrada(s)")
 
-# ============================================
-# MÉTRICAS EN MEMORIA (para el endpoint)
-# ============================================
-
+#metricas de memoria para el end point
 metrics = {
     "total_ok":   0,
     "total_deny": 0,
     "registered": len(labels)
 }
 
-# ============================================
-# WEBCAM
-# ============================================
-
+#cámara
 camera = cv2.VideoCapture(0)
 camera.set(cv2.CAP_PROP_FRAME_WIDTH,  640)
 camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
 face_data = {"detected": False}
 
-# último acceso registrado para no duplicar en BD
+#último acceso registrado para no duplicar en BD
 _last_logged = {"name": None, "ts": 0}
 
-# ============================================
-# VIDEO STREAM
-# ============================================
-
+#video stream
 def generate_frames():
 
     global face_data
@@ -125,13 +104,12 @@ def generate_frames():
         frame_count += 1
         frame = cv2.flip(frame, 1)
 
-        # ── Preprocesamiento: ecualización de histograma ──────────────────
+        #preprocesamiento: ecualización de histograma
         ycrcb              = cv2.cvtColor(frame, cv2.COLOR_BGR2YCrCb)
         ycrcb[:, :, 0]     = cv2.equalizeHist(ycrcb[:, :, 0])
         frame_proc         = cv2.cvtColor(ycrcb, cv2.COLOR_YCrCb2BGR)
-        # ─────────────────────────────────────────────────────────────────
 
-        # Analizar cada 20 frames para reducir lag con retinaface
+        #analizar cada 20 frames para reducir lag con retinaface
         if frame_count % 20 == 0:
 
             try:
@@ -139,7 +117,7 @@ def generate_frames():
                 objs = DeepFace.represent(
                     img_path          = frame_proc,
                     model_name        = "ArcFace",
-                    detector_backend  = "retinaface",   # ← consistente con build
+                    detector_backend  = "retinaface",
                     enforce_detection = False
                 )
 
@@ -165,7 +143,7 @@ def generate_frames():
 
                     print(f"Similitud: {similarity:.4f}  |  Persona: {labels[I[0][0]]}")
 
-                    # ── RECONOCIDO ────────────────────────────────────────
+                    #usuario reconocido
                     if similarity > THRESHOLD:
 
                         name = labels[I[0][0]]
@@ -197,7 +175,7 @@ def generate_frames():
 
                         _log_access(nombre_real, codigo, "aprobado", confidence)
 
-                    # ── DESCONOCIDO ───────────────────────────────────────
+                    #usuario desconocido
                     else:
 
                         if similarity > 0.15:
@@ -223,7 +201,7 @@ def generate_frames():
             except Exception as e:
                 print("Error:", e)
 
-        # ── Dibujar resultado ─────────────────────────────────────────────
+        #dibujar bounding box del resultado
         if face_data.get("detected"):
 
             x = face_data["x"];  y = face_data["y"]
@@ -245,10 +223,7 @@ def generate_frames():
             b"\r\n"
         )
 
-# ============================================
-# HELPER: registrar acceso sin duplicar
-# ============================================
-
+#registrar acceso sin duplicar
 def _log_access(nombre, codigo, resultado, confianza):
     """Guarda el acceso en la BD y actualiza métricas.
     Evita duplicados: no registra el mismo nombre si pasaron < 5 s."""
@@ -273,10 +248,7 @@ def _log_access(nombre, codigo, resultado, confianza):
     else:
         metrics["total_deny"] += 1
 
-# ============================================
-# ROUTES
-# ============================================
-
+#rutas
 @app.route("/")
 def home():
     return render_template("index.html")
@@ -325,9 +297,6 @@ def get_metrics():
         "history":    history
     })
 
-# ============================================
-# RUN
-# ============================================
-
+#run
 if __name__ == "__main__":
     app.run(debug=True)

@@ -16,13 +16,13 @@ cursor.execute("""
 rows = cursor.fetchall()
 
 if not rows:
-    print("⚠️  No hay registros en la tabla 'accesos'.")
-    print("   Corre el sistema primero para generar datos.")
+    print("No hay registros en la tabla accesos")
+    print("Corre el sistema primero para generar datos")
     conn.close()
     exit()
 
 print(f"\n{'═'*55}")
-print(f"  BioEntry — Evaluación del Modelo")
+print(f"  BioEntry - Evaluación del Modelo")
 print(f"  {datetime.now().strftime('%Y-%m-%d  %H:%M:%S')}")
 print(f"{'═'*55}\n")
 
